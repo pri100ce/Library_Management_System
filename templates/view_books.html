@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}
+View Books
+{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('admin_dashboard') }}"
+class="btn btn-secondary back-btn">
+
+← Back to Dashboard
+
+</a>
+
+<div class="card">
+
+<h1 class="page-title">
+
+Library Books
+
+</h1>
+
+<p class="subtitle">
+
+Manage your library collection.
+
+</p>
+
+<table class="table">
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+
+<th>Book Name</th>
+
+<th>Author</th>
+
+<th>Category</th>
+
+<th>Quantity</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for b in books %}
+
+<tr>
+
+<form method="POST">
+
+<td>
+
+{{ b.id }}
+
+<input
+type="hidden"
+name="id"
+value="{{ b.id }}">
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="name"
+value="{{ b.book_name }}"
+required>
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="author"
+value="{{ b.author }}"
+required>
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="category"
+value="{{ b.category }}"
+required>
+
+</td>
+
+<td>
+
+<input
+type="number"
+name="qty"
+value="{{ b.quantity }}"
+min="0"
+required>
+
+</td>
+
+<td>
+
+<div class="action-buttons">
+
+<button
+class="btn btn-primary"
+type="submit"
+name="action"
+value="update">
+
+Update
+
+</button>
+
+<button
+class="btn btn-danger"
+type="submit"
+name="action"
+value="delete">
+
+Delete
+
+</button>
+
+</div>
+
+</td>
+
+</form>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="6" class="empty-table">
+
+No books available.
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

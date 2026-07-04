@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}
+Issue Book
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:700px;margin:auto;">
+
+    <h1 class="page-title">
+        Issue Book
+    </h1>
+
+    <p class="subtitle">
+        Assign a book to a student.
+    </p>
+
+    <form method="POST">
+
+        <div class="form-group">
+
+            <label>Student</label>
+
+            <select name="student_id" required>
+
+                {% for s in students %}
+
+                <option value="{{ s.id }}">
+                    {{ s.name }} (ID : {{ s.id }})
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Book</label>
+
+            <select name="book_id" required>
+
+                {% for b in books %}
+
+                <option value="{{ b.id }}">
+                    {{ b.book_name }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Issue Date</label>
+
+            <input
+                type="date"
+                name="issue_date"
+                required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Return Date</label>
+
+            <input
+                type="date"
+                name="return_date"
+                required>
+
+        </div>
+
+        <button
+            class="btn btn-success"
+            type="submit">
+
+            Issue Book
+
+        </button>
+
+        <a
+            href="{{ url_for('admin_dashboard') }}"
+            class="btn btn-secondary">
+
+            Back
+
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

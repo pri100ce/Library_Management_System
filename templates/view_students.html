@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}
+View Students
+{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('admin_dashboard') }}"
+class="btn btn-secondary back-btn">
+
+← Back to Dashboard
+
+</a>
+
+<div class="card">
+
+<h1 class="page-title">
+
+Students
+
+</h1>
+
+<p class="subtitle">
+
+Manage registered students.
+
+</p>
+
+<table class="table">
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>Name</th>
+<th>Class</th>
+<th>Phone</th>
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for s in students %}
+
+<tr>
+
+<form method="POST">
+
+<td>
+
+{{ s.id }}
+
+<input
+type="hidden"
+name="id"
+value="{{ s.id }}">
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="name"
+value="{{ s.name }}"
+required>
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="class"
+value="{{ s.class }}"
+required>
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="phone"
+value="{{ s.phone }}"
+required>
+
+</td>
+
+<td>
+
+<div class="action-buttons">
+
+<button
+class="btn btn-primary"
+type="submit"
+name="action"
+value="update">
+
+Update
+
+</button>
+
+<button
+class="btn btn-danger"
+type="submit"
+name="action"
+value="delete">
+
+Delete
+
+</button>
+
+</div>
+
+</td>
+
+</form>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="5" class="empty-table">
+
+No students found.
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

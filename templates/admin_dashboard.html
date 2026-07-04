@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}
+Admin Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:35px;">
+
+    <h1 class="page-title">
+        Welcome Back, {{ name }} 👋
+    </h1>
+
+    <p class="subtitle">
+        Here's an overview of your library.
+    </p>
+
+</div>
+
+<div class="stats-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-icon stat-blue">
+
+            <i class="fa-solid fa-book"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h2>{{ total_books }}</h2>
+
+            <p>Total Books</p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon stat-green">
+
+            <i class="fa-solid fa-users"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h2>{{ total_students }}</h2>
+
+            <p>Total Students</p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon stat-orange">
+
+            <i class="fa-solid fa-book-open-reader"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h2>{{ issued_books }}</h2>
+
+            <p>Books Issued</p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon stat-red">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h2>{{ overdue_books }}</h2>
+
+            <p>Overdue Books</p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="dashboard">
+
+    <a href="{{ url_for('add_book') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-book-medical"></i>
+        </span>
+
+        <h3>Add Book</h3>
+
+        <p>Add a new book to the library.</p>
+
+    </a>
+
+    <a href="{{ url_for('view_books') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-book-open"></i>
+        </span>
+
+        <h3>View Books</h3>
+
+        <p>Edit or delete existing books.</p>
+
+    </a>
+
+    <a href="{{ url_for('add_student') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-user-plus"></i>
+        </span>
+
+        <h3>Add Student</h3>
+
+        <p>Create a new student account.</p>
+
+    </a>
+
+    <a href="{{ url_for('view_students') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-users"></i>
+        </span>
+
+        <h3>View Students</h3>
+
+        <p>Manage all registered students.</p>
+
+    </a>
+
+    <a href="{{ url_for('issue_book') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-share"></i>
+        </span>
+
+        <h3>Issue Book</h3>
+
+        <p>Issue books to students.</p>
+
+    </a>
+
+    <a href="{{ url_for('return_book') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-reply"></i>
+        </span>
+
+        <h3>Return Book</h3>
+
+        <p>Receive returned books.</p>
+
+    </a>
+
+    <a href="{{ url_for('view_issued_books') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </span>
+
+        <h3>Issued History</h3>
+
+        <p>View all issued book records.</p>
+
+    </a>
+
+    <a href="{{ url_for('logout') }}" class="dashboard-card">
+
+        <span>
+            <i class="fa-solid fa-right-from-bracket"></i>
+        </span>
+
+        <h3>Logout</h3>
+
+        <p>Sign out securely.</p>
+
+    </a>
+
+</div>
+
+<div class="card activity-card">
+
+<h2 class="page-title">
+
+Recent Activity
+
+</h2>
+
+{% if activities %}
+
+{% for activity in activities %}
+
+<div class="activity">
+
+<div class="activity-title">
+
+{{ activity.activity }}
+
+</div>
+
+<div class="activity-time">
+
+{{ activity.created_at }}
+
+</div>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<p>No activity yet.</p>
+
+{% endif %}
+
+</div>
+
+{% endblock %}

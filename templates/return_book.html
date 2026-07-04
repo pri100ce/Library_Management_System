@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}
+Return Book
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:700px;margin:auto;">
+
+<h1 class="page-title">
+
+Return Book
+
+</h1>
+
+<p class="subtitle">
+
+Receive a returned library book.
+
+</p>
+
+<form method="POST">
+
+<div class="form-group">
+
+<label>
+
+Select Issued Record
+
+</label>
+
+<select
+name="issued_id"
+required>
+
+{% for a in active_issues %}
+
+<option value="{{ a.id }}">
+
+{{ a.id }}
+—
+{{ a.name }}
+—
+{{ a.book_name }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+<button
+class="btn btn-success"
+type="submit">
+
+Confirm Return
+
+</button>
+
+<a
+href="{{ url_for('admin_dashboard') }}"
+class="btn btn-secondary">
+
+Back
+
+</a>
+
+</form>
+
+</div>
+
+{% endblock %}

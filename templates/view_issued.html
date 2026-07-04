@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}
+Issued Books
+{% endblock %}
+
+{% block content %}
+
+<a
+href="{{ url_for('admin_dashboard') }}"
+class="btn btn-secondary back-btn">
+
+← Back
+
+</a>
+
+<div class="card">
+
+<h1 class="page-title">
+
+Issued Books
+
+</h1>
+
+<p class="subtitle">
+
+Track all issued books.
+
+</p>
+
+<table class="table">
+
+<thead>
+
+<tr>
+
+<th>Sr.no</th>
+
+<th>Student</th>
+
+<th>Book</th>
+
+<th>Issue Date</th>
+
+<th>Return Date</th>
+
+<th>Status</th>
+
+<th>Fine</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for i in issued %}
+
+<tr>
+
+<td>{{ i.id }}</td>
+
+<td>{{ i.student_name }}</td>
+
+<td>{{ i.book_name }}</td>
+
+<td>{{ i.issue_date }}</td>
+
+<td>{{ i.return_date }}</td>
+
+<td>
+
+{% if i.status=="Issued" %}
+
+<span class="badge badge-issued">
+
+Issued
+
+</span>
+
+{% else %}
+
+<span class="badge badge-returned">
+
+Returned
+
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+₹{{ i.fine_amount }}
+
+</td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="7" class="empty-table">
+
+No issued books found.
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}Library Management System{% endblock %}
+    </title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% if session.get('role') %}
+
+<nav class="navbar">
+
+    <div class="logo">
+
+        <!-- Logo will go here later -->
+        <span style="font-size:38px;">📚</span>
+
+        <div>
+
+            <h2>Library Management</h2>
+
+            <small style="color:#d9d9d9;">
+                Digital Library System
+            </small>
+
+        </div>
+
+    </div>
+
+    <div class="user-area">
+
+        {% if session.get('role') == 'admin' %}
+
+            <span>
+                👤 Admin :
+                <strong>{{ session['name'] }}</strong>
+            </span>
+
+        {% elif session.get('role') == 'student' %}
+
+            <span>
+                👨‍🎓 Student :
+                <strong>{{ session['name'] }}</strong>
+            </span>
+
+        {% endif %}
+
+        <a href="{{ url_for('logout') }}"
+           class="logout-btn">
+
+            Logout
+
+        </a>
+
+    </div>
+
+</nav>
+
+{% endif %}
+
+<div class="container">
+
+{% with messages = get_flashed_messages() %}
+
+{% if messages %}
+
+{% for message in messages %}
+
+<div class="alert alert-success">
+
+{{ message }}
+
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+{% endwith %}
+
+{% block content %}
+
+{% endblock %}
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}
+Student Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+
+<h1 class="page-title">
+
+My Library
+
+</h1>
+
+<p class="subtitle">
+
+Welcome,
+<strong>{{ name }}</strong>
+
+</p>
+
+<table class="table">
+
+<thead>
+
+<tr>
+
+<th>Book</th>
+
+<th>Author</th>
+
+<th>Issue Date</th>
+
+<th>Return Date</th>
+
+<th>Status</th>
+
+<th>Fine</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for b in books %}
+
+<tr>
+
+<td>{{ b.book_name }}</td>
+
+<td>{{ b.author }}</td>
+
+<td>{{ b.issue_date }}</td>
+
+<td>{{ b.return_date }}</td>
+
+<td>
+
+{% if b.status=="Issued" %}
+
+<span class="badge badge-issued">
+
+Issued
+
+</span>
+
+{% else %}
+
+<span class="badge badge-returned">
+
+Returned
+
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+₹{{ b.fine_amount }}
+
+</td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="6" class="empty-table">
+
+No books have been issued.
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}
