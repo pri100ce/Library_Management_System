@@ -879,3 +879,23 @@ body{
     margin-bottom:20px;
 
 }
+
+.info-box{
+
+    background:#eef7ff;
+
+    border-left:5px solid #003366;
+
+    padding:15px;
+
+    border-radius:8px;
+
+    margin-bottom:20px;
+
+}
+
+.info-box p{
+
+    margin:8px 0;
+
+}
