@@ -13,6 +13,9 @@
     </title>
 
     <link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+    <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
 </head>
@@ -45,14 +48,14 @@
         {% if session.get('role') == 'admin' %}
 
             <span>
-                👤 Admin :
+                <i class="fa-solid fa-user"></i> Admin :
                 <strong>{{ session['name'] }}</strong>
             </span>
 
         {% elif session.get('role') == 'student' %}
 
             <span>
-                👨‍🎓 Student :
+                <i class="fa-solid fa-graduation-cap"></i> Student :
                 <strong>{{ session['name'] }}</strong>
             </span>
 

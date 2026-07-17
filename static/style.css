@@ -947,3 +947,33 @@ body{
     color:#003366;
 
 }
+
+/* ===========================
+   Input Icons
+=========================== */
+
+.input-icon{
+
+    position:relative;
+
+}
+
+.input-icon i{
+
+    position:absolute;
+
+    left:15px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:#666;
+
+}
+
+.input-icon input{
+
+    padding-left:45px;
+
+}
