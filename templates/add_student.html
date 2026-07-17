@@ -59,11 +59,33 @@ required>
 
 <label>Password</label>
 
-<input
+<!-- <input
 type="password"
 name="password"
 value="student123"
-required>
+required> -->
+
+<div class="password-box">
+
+    <input
+        type="password"
+        id="password"
+        name="password"
+        placeholder="Set Account Password"
+        value="student123"
+        required
+    >
+
+    <button
+        type="button"
+        id="togglePassword"
+        class="password-toggle"
+        aria-label="Show or hide password"
+    >
+        <i class="fa-solid fa-eye"></i>
+    </button>
+
+</div>
 
 </div>
 

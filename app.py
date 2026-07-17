@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 from mysql.connector import Error
 #from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = "super_secret_library_key"
@@ -366,7 +366,7 @@ def view_books():
         cursor.execute("""
             SELECT *
             FROM books
-            ORDER BY id DESC
+            ORDER BY id 
         """)
 
         books = cursor.fetchall()
@@ -492,6 +492,7 @@ def view_students():
                 name = request.form.get("name").strip()
                 student_class = request.form.get("class").strip()
                 phone = request.form.get("phone").strip()
+                password = request.form.get("password").strip()
 
                 if not phone.isdigit() or len(phone) != 10:
                     flash("Invalid phone number.")
@@ -502,13 +503,15 @@ def view_students():
                     SET
                         name=%s,
                         class=%s,
-                        phone=%s
+                        phone=%s,
+                        password=%s
                     WHERE id=%s
                 """,
                 (
                     name,
                     student_class,
                     phone,
+                    password,
                     student_id
                 ))
 
@@ -553,7 +556,7 @@ def view_students():
         cursor.execute("""
             SELECT *
             FROM students
-            ORDER BY id DESC
+            ORDER BY id 
         """)
 
         students = cursor.fetchall()
@@ -599,8 +602,24 @@ def issue_book():
 
             student_id = request.form.get("student_id")
             book_id = request.form.get("book_id")
-            issue_date = request.form.get("issue_date")
-            return_date = request.form.get("return_date")
+
+            # ----------------------------------
+            # Automatic Date Generation
+            # ----------------------------------
+
+            issue_date = datetime.now().date()
+
+            # Book will be due after 15 days
+            return_date = issue_date + timedelta(days=15)
+
+            # ----------------------------------
+            # Manual Dates (Old Code)
+            # Uncomment if you want manual dates.
+            # ----------------------------------
+
+            # issue_date = request.form.get("issue_date")
+            # return_date = request.form.get("return_date")
+            
 
             cursor.execute(
                 "SELECT quantity FROM books WHERE id=%s",

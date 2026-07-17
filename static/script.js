@@ -31,6 +31,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+// ================================
+// Show / Hide Password
+// ================================
+
+const togglePassword = document.getElementById("togglePassword");
+
+if (togglePassword) {
+
+    togglePassword.addEventListener("click", function () {
+
+        const password = document.getElementById("password");
+        const icon = this.querySelector("i");
+
+        if (password.type === "password") {
+
+            password.type = "text";
+            icon.classList.replace("fa-eye", "fa-eye-slash");
+
+        } else {
+
+            password.type = "password";
+            icon.classList.replace("fa-eye-slash", "fa-eye");
+
+        }
+
+    });
+
+}
+
 // ======================================
 // Auto Hide Flash Messages
 // ======================================
@@ -55,3 +84,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+

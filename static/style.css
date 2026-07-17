@@ -879,3 +879,71 @@ body{
     margin-bottom:20px;
 
 }
+
+.info-box{
+
+    background:#eef7ff;
+
+    border-left:5px solid #003366;
+
+    padding:15px;
+
+    border-radius:8px;
+
+    margin-bottom:20px;
+
+}
+
+.info-box p{
+
+    margin:8px 0;
+
+}
+
+.password-box{
+
+    position:relative;
+
+    width:100%;
+
+    margin-bottom:20px;
+
+}
+
+.password-box input{
+
+    width:100%;
+
+    padding:10px 45px 10px 12px;
+
+    box-sizing:border-box;
+
+}
+
+.password-toggle{
+
+    position:absolute;
+
+    right:12px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    background:none;
+
+    border:none;
+
+    cursor:pointer;
+
+    color:#666;
+
+    font-size:18px;
+
+}
+
+.password-toggle:hover{
+
+    color:#003366;
+
+}
