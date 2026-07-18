@@ -47,12 +47,14 @@ if (togglePassword) {
         if (password.type === "password") {
 
             password.type = "text";
-            icon.classList.replace("fa-eye", "fa-eye-slash");
+            //icon.classList.replace("fa-eye", "fa-eye-slash");
+            icon.classList.replace("fa-eye-slash", "fa-eye");
 
         } else {
 
             password.type = "password";
-            icon.classList.replace("fa-eye-slash", "fa-eye");
+            //icon.classList.replace("fa-eye-slash", "fa-eye");
+            icon.classList.replace("fa-eye", "fa-eye-slash");
 
         }
 
