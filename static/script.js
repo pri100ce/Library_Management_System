@@ -87,3 +87,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+// ==========================
+// Theme Toggle
+// ==========================
+
+const themeBtn = document.getElementById("themeToggle");
+
+if(themeBtn){
+
+    const icon = themeBtn.querySelector("i");
+
+    const savedTheme = localStorage.getItem("theme");
+
+    if(savedTheme === "dark"){
+
+        document.body.classList.add("dark");
+
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+
+    }
+
+    themeBtn.addEventListener("click", function(){
+
+        document.body.classList.toggle("dark");
+
+        if(document.body.classList.contains("dark")){
+
+            localStorage.setItem("theme","dark");
+
+            icon.classList.remove("fa-moon");
+            icon.classList.add("fa-sun");
+
+        }else{
+
+            localStorage.setItem("theme","light");
+
+            icon.classList.remove("fa-sun");
+            icon.classList.add("fa-moon");
+
+        }
+
+    });
+
+}

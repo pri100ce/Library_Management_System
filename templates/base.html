@@ -29,7 +29,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     <div class="logo">
 
         <!-- Logo will go here later -->
-        <span style="font-size:38px;">📚</span>
+        <i class="fa-solid fa-book-open-reader logo-icon"></i>
 
         <div>
 
@@ -60,6 +60,12 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
             </span>
 
         {% endif %}
+
+        <button id="themeToggle" class="theme-toggle" type="button" title="Toggle Theme">
+        
+            <i class="fa-solid fa-moon"></i>
+        
+        </button>
 
         <a href="{{ url_for('logout') }}"
            class="logout-btn">
