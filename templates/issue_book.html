@@ -77,34 +77,41 @@ Issue Book
         </div> -->
 
         <div class="info-box">
-        
-            <strong>📅 Issue Policy</strong>
-        
+
+            <strong>
+                <i class="fa-solid fa-circle-info"></i>
+                Issue Policy
+            </strong>
+
             <p>
                 • Issue Date: <strong>Automatically set to today's date</strong>
             </p>
-        
+
             <p>
                 • Return Date: <strong>15 days after issue</strong>
             </p>
-        
+
         </div>
 
-        <button
-            class="btn btn-success"
-            type="submit">
+        <div class="form-actions">
 
-            Issue Book
+            <button type="submit" class="btn btn-success">
 
-        </button>
+                <i class="fa-solid fa-book-open-reader"></i>
 
-        <a
-            href="{{ url_for('admin_dashboard') }}"
-            class="btn btn-secondary">
+                Issue Book
 
-            Back
+            </button>
 
-        </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">
+
+                <i class="fa-solid fa-arrow-left"></i>
+
+                Back
+
+            </a>
+
+        </div>
 
     </form>
 

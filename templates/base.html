@@ -20,7 +20,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 </head>
 
-<body>
+<body{% if session.get('theme') == 'dark' %} class="dark"{% endif %}>
 
 {% if session.get('role') %}
 

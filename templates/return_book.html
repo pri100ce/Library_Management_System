@@ -8,67 +8,67 @@ Return Book
 
 <div class="card" style="max-width:700px;margin:auto;">
 
-<h1 class="page-title">
+    <h1 class="page-title">
 
-Return Book
+        Return Book
 
-</h1>
+    </h1>
 
-<p class="subtitle">
+    <p class="subtitle">
 
-Receive a returned library book.
+        Receive a returned library book.
 
-</p>
+    </p>
 
-<form method="POST">
+    <form method="POST">
 
-<div class="form-group">
+        <div class="form-group">
 
-<label>
+            <label>
 
-Select Issued Record
+                Select Issued Record
 
-</label>
+            </label>
 
-<select
-name="issued_id"
-required>
+            <select name="issued_id" required>
 
-{% for a in active_issues %}
+                {% for a in active_issues %}
 
-<option value="{{ a.id }}">
+                <option value="{{ a.id }}">
 
-{{ a.id }}
-—
-{{ a.name }}
-—
-{{ a.book_name }}
+                    {{ a.id }}
+                    —
+                    {{ a.name }}
+                    —
+                    {{ a.book_name }}
 
-</option>
+                </option>
 
-{% endfor %}
+                {% endfor %}
 
-</select>
+            </select>
 
-</div>
+        </div>
 
-<button
-class="btn btn-success"
-type="submit">
+        <div class="form-actions">
 
-Confirm Return
+            <button type="submit" class="btn btn-success">
 
-</button>
+                <i class="fa-solid fa-rotate-left"></i>
 
-<a
-href="{{ url_for('admin_dashboard') }}"
-class="btn btn-secondary">
+                Return Book
 
-Back
+            </button>
 
-</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">
 
-</form>
+                <i class="fa-solid fa-arrow-left"></i>
+
+                Cancel
+
+            </a>
+
+    </form>
 
 </div>
 

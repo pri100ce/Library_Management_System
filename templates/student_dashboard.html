@@ -1,217 +1,283 @@
-
-
-
-{% extends "base.html" %}
-
-{% block title %}
-Student Dashboard
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %} Student Dashboard {% endblock %} {%
+block content %}
 
 <div class="dashboard-header">
+  <div>
+    <h1 class="page-title">Welcome, {{ name }} 👋</h1>
 
-    <div>
-
-        <h1 class="page-title">
-            Welcome, {{ name }} 👋
-        </h1>
-
-        <p class="subtitle">
-            Here is an overview of your library account.
-        </p>
-
-    </div>
-
+    <p class="subtitle">Here is an overview of your library account.</p>
+  </div>
 </div>
 
 <!-- Summary Cards -->
+
 <div class="stats-grid">
-
-    <div class="stat-card">
-        <div class="stat-icon stat-blue">
-            <i class="fa-solid fa-book"></i>
-        </div>
-        <div class="stat-info">
-            <h2>{{ books | selectattr("status", "equalto", "Issued") | list | length }}</h2>
-            <p>Borrowed Books</p>
-        </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-blue">
+      <i class="fa-solid fa-book"></i>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-icon stat-green">
-            <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div class="stat-info">
-            <h2>{{ books | selectattr("status", "equalto", "Returned") | list | length }}</h2>
-            <p>Returned Books</p>
-        </div>
+    <div class="stat-info">
+      <h2>{{ stats.borrowed_books or 0 }}</h2>
+      <p>Borrowed Books</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-green">
+      <i class="fa-solid fa-circle-check"></i>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-icon stat-orange">
-            <i class="fa-solid fa-clock"></i>
-        </div>
-        <div class="stat-info">
-            <!-- <h2>{{ books | selectattr("fine_amount", "gt", 0) | list | length }}</h2> -->
-            <h2>
-                {{ books
-                | selectattr("status","equalto","Issued")
-                | selectattr("fine_status","equalto","Pending")
-                | list
-                | length }}
-            </h2>
-            <p>Overdue Books</p>
-        </div>
+    <div class="stat-info">
+      <h2>{{ stats.returned_books or 0 }}</h2>
+      <p>Returned Books</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-orange">
+      <i class="fa-solid fa-clock"></i>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-icon stat-red">
-            <i class="fa-solid fa-indian-rupee-sign"></i>
-        </div>
-        <div class="stat-info">
-            <!-- <h2>₹{{ books | sum(attribute="fine_amount") }}</h2> -->
-            <h2>
-                ₹{{
-                books
-                | selectattr("fine_status","equalto","Pending")
-                | sum(attribute="fine_amount")
-                }}
-            </h2>
-            <p>Outstanding Fine</p>
-        </div>
+    <div class="stat-info">
+      <h2>{{ stats.overdue_books or 0 }}</h2>
+      <p>Overdue Books</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-red">
+      <i class="fa-solid fa-indian-rupee-sign"></i>
     </div>
 
+    <div class="stat-info">
+      <h2>₹{{ stats.outstanding_fine or 0 }}</h2>
+      <p>Outstanding Fine</p>
+    </div>
+  </div>
 </div>
 
-<!-- Borrowed Books Table -->
+<!-- Table -->
+
 <div class="card">
+  <div style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    ">
+    <div>
+      <h2 class="page-title" style="margin-bottom: 5px">My Books</h2>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-
-        <div>
-            <h2 class="page-title" style="margin-bottom:5px;">My Books</h2>
-            <p class="subtitle" style="margin:0;">All your issued and returned books.</p>
-        </div>
-
-
-
-        <div class="table-actions" style="display:flex; gap:10px;">
-            <div class="table-toolbar">
-                <input type="text" id="bookSearch" placeholder=" Search by book or author..." class="search-box">
-            </div>
-            
-            <div>
-                <button onclick="window.print()" class="btn btn-primary">
-
-                    <i class="fa-solid fa-print"></i>
-
-                    Print
-
-                </button>
-            </div>
-
-        </div>
-
+      <p class="subtitle" style="margin: 0">
+        All your issued and returned books.
+      </p>
     </div>
 
-    
+    <div class="table-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+      <form method="GET" class="table-toolbar">
+        <input type="text" name="search" class="search-box" placeholder="Search by book or author..."
+          value="{{ search }}" />
 
-    <table class="table" id="booksTable">
+        <button class="btn btn-primary" type="submit">
+          <i class="fa-solid fa-magnifying-glass"></i>
 
-        <thead>
-            <tr>
-                <th>Book</th>
-                <th>Author</th>
-                <th>Issue Date</th>
-                <th>Return Date</th>
-                <th>Status</th>
-                <th>Fine</th>
-            </tr>
-        </thead>
+          Search
+        </button>
 
-        <tbody>
+        {% if search %}
 
-            {% for b in books %}
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+          Clear
+        </a>
 
-            <tr>
+        {% endif %}
+      </form>
 
-                <td>
-                    <div style="font-weight:600;">{{ b.book_name }}</div>
-                </td>
+      <div class="export-dropdown">
+        <button class="btn btn-primary export-btn" type="button">
+          <i class="fa-solid fa-download"></i>
 
-                <td>{{ b.author }}</td>
+          Export
 
-                <td>{{ b.issue_date }}</td>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
 
-                <td>{{ b.return_date }}</td>
+        <div class="export-menu">
+          <a href="{{ url_for('export_student_pdf') }}">
+            <i class="fa-solid fa-file-pdf"></i>
+            PDF
+          </a>
 
-                <td>
-                    {% if b.status == "Issued" %}
-                        <span class="badge badge-issued">
-                            <i class="fa-solid fa-book-open"></i> Issued
-                        </span>
-                    {% else %}
-                        <span class="badge badge-returned">
-                            <i class="fa-solid fa-circle-check"></i> Returned
-                        </span>
-                    {% endif %}
-                </td>
+          <a href="{{ url_for('export_student_excel') }}">
+            <i class="fa-solid fa-file-excel"></i>
+            Excel
+          </a>
 
-                <td>
-                    {% if b.fine_amount > 0 %}
-                        <span style="color:#dc3545; font-weight:700;">₹{{ b.fine_amount }}</span>
-                    {% else %}
-                        <span style="color:#28a745; font-weight:600;">No Fine</span>
-                    {% endif %}
-                </td>
+          <a href="{{ url_for('export_student_csv') }}">
+            <i class="fa-solid fa-file-csv"></i>
+            CSV
+          </a>
 
-            </tr>
+          <a onclick="window.print(); return false;">
+            <i class="fa-solid fa-print"></i>
+            Print
+          </a>
+        </div>
+      </div>
 
-            {% else %}
+    </div>
+  </div>
 
-            <tr>
-                <td colspan="6" class="empty-table">
-                    <i class="fa-regular fa-folder-open" style="font-size:40px; color:#bbb;"></i>
-                    <div style="margin-top:10px; font-weight:600;">No books have been issued.</div>
-                    <div style="color:#888;">Visit the library to borrow your first book.</div>
-                </td>
-            </tr>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Book Cover</th>
 
-            {% endfor %}
+        <th>Book</th>
 
-        </tbody>
+        <th>Author</th>
 
-    </table>
+        <th>Issue Date</th>
 
+        <th>Return Date</th>
+
+        <th>Status</th>
+
+        <th>Fine</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for b in books %}
+
+      <tr>
+        <td>
+          {% if b.cover_image %}
+
+          <img src="{{ url_for('static', filename='uploads/books/' ~ b.cover_image) }}" class="student-book-cover" />
+
+          {% else %}
+
+          <i class="fa-solid fa-book book-placeholder"></i>
+
+          {% endif %}
+        </td>
+
+        <td>
+          <strong>{{ b.book_name }}</strong>
+        </td>
+
+        <td>{{ b.author }}</td>
+
+        <td>{{ b.issue_date }}</td>
+
+        <td>{{ b.return_date }}</td>
+
+        <td>
+          {% if b.status == "Issued" %}
+
+          <span class="badge badge-issued">
+            <i class="fa-solid fa-book-open"></i>
+
+            Issued
+          </span>
+
+          {% else %}
+
+          <span class="badge badge-returned">
+            <i class="fa-solid fa-circle-check"></i>
+
+            Returned
+          </span>
+
+          {% endif %}
+        </td>
+
+        <td>
+          {% if b.fine_amount > 0 %}
+
+          <span style="color: #dc3545; font-weight: 700">
+            ₹{{ b.fine_amount }}
+          </span>
+
+          {% else %}
+
+          <span style="color: #28a745; font-weight: 600"> No Fine </span>
+
+          {% endif %}
+        </td>
+      </tr>
+
+      {% else %}
+
+      <tr>
+        <td colspan="7" class="empty-table">
+          <i class="fa-regular fa-folder-open" style="font-size: 40px; color: #bbb"></i>
+
+          <div style="margin-top: 10px; font-weight: 600">No books found.</div>
+        </td>
+      </tr>
+
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Footer -->
+
+  <div class="table-footer">
+    <div>
+      Showing {{ ((page-1) * per_page) + 1 if total_books else 0 }} to {{ [page
+      * per_page, total_books] | min }} of {{ total_books }} books
+    </div>
+
+    <div class="pagination">
+      {% if page > 1 %}
+
+      <a class="btn btn-secondary" href="{{ url_for('student_dashboard', page=page-1, search=search) }}">
+        ← Previous
+      </a>
+
+      {% endif %} {% for p in range(1, total_pages + 1) %} {% if p == page %}
+
+      <span class="btn btn-primary">{{ p }}</span>
+
+      {% else %}
+
+      <a class="btn btn-secondary" href="{{ url_for('student_dashboard', page=p, search=search) }}">
+        {{ p }}
+      </a>
+
+      {% endif %} {% endfor %} {% if page < total_pages %} <a class="btn btn-secondary"
+        href="{{ url_for('student_dashboard', page=page+1, search=search) }}">
+        Next →
+        </a>
+
+        {% endif %}
+    </div>
+  </div>
 </div>
 
 <script>
+  const searchBox = document.querySelector('input[name="search"]');
 
-document.getElementById("bookSearch").addEventListener("keyup", function () {
+  let timer;
 
-    let filter = this.value.toLowerCase();
+  searchBox.addEventListener("keyup", function () {
+    clearTimeout(timer);
 
-    let rows = document.querySelectorAll("#booksTable tbody tr");
+    timer = setTimeout(function () {
+      if (searchBox.value.trim() === "") {
+        window.location = "/admin/view-books";
 
-    rows.forEach(function(row) {
+        return;
+      }
 
-        let text = row.innerText.toLowerCase();
-
-        if (text.indexOf(filter) > -1) {
-
-            row.style.display = "";
-
-        } else {
-
-            row.style.display = "none";
-
-        }
-
-    });
-
-});
-
+      searchBox.form.submit();
+    }, 800);
+  });
 </script>
 
 {% endblock %}

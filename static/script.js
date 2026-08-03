@@ -47,13 +47,11 @@ if (togglePassword) {
         if (password.type === "password") {
 
             password.type = "text";
-            //icon.classList.replace("fa-eye", "fa-eye-slash");
             icon.classList.replace("fa-eye-slash", "fa-eye");
 
         } else {
 
             password.type = "password";
-            //icon.classList.replace("fa-eye-slash", "fa-eye");
             icon.classList.replace("fa-eye", "fa-eye-slash");
 
         }
@@ -78,10 +76,12 @@ document.addEventListener("DOMContentLoaded", function () {
             flash.style.opacity = "0";
 
             setTimeout(function () {
+
                 flash.remove();
+
             }, 500);
 
-        }, 3000);   // disappears after 3 seconds
+        }, 3000);
 
     }
 
@@ -93,40 +93,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
 const themeBtn = document.getElementById("themeToggle");
 
-if(themeBtn){
+if (themeBtn) {
 
     const icon = themeBtn.querySelector("i");
 
-    const savedTheme = localStorage.getItem("theme");
-
-    if(savedTheme === "dark"){
-
-        document.body.classList.add("dark");
+    // Set correct icon based on current theme
+    if (document.body.classList.contains("dark")) {
 
         icon.classList.remove("fa-moon");
         icon.classList.add("fa-sun");
 
     }
 
-    themeBtn.addEventListener("click", function(){
+    themeBtn.addEventListener("click", function () {
 
         document.body.classList.toggle("dark");
 
-        if(document.body.classList.contains("dark")){
+        const theme = document.body.classList.contains("dark")
+            ? "dark"
+            : "light";
 
-            localStorage.setItem("theme","dark");
+        // Change icon
+        if (theme === "dark") {
 
             icon.classList.remove("fa-moon");
             icon.classList.add("fa-sun");
 
-        }else{
-
-            localStorage.setItem("theme","light");
+        } else {
 
             icon.classList.remove("fa-sun");
             icon.classList.add("fa-moon");
 
         }
+
+        // Save theme in database
+        fetch("/save-theme", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+
+            body: "theme=" + encodeURIComponent(theme)
+
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (!data.success) {
+
+                console.error("Theme could not be saved.");
+
+            }
+
+        })
+        .catch(error => {
+
+            console.error("Error saving theme:", error);
+
+        });
 
     });
 

@@ -1,10 +1,39 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
 import mysql.connector
 from mysql.connector import Error
 #from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+from io import BytesIO
+from io import BytesIO
+from flask import Response
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.units import inch
+from datetime import datetime
+
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = "static/uploads/books"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
+def allowed_file(filename):
+
+    return (
+
+        "." in filename
+
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    )
+
 app.secret_key = "super_secret_library_key"
 
 
@@ -91,6 +120,7 @@ def login():
                 session["user_id"] = admin["id"]
                 session["role"] = "admin"
                 session["name"] = admin["username"]
+                session["theme"] = admin["theme"]
 
                 return redirect(url_for("admin_dashboard"))
 
@@ -109,6 +139,7 @@ def login():
                 session["user_id"] = student["id"]
                 session["role"] = "student"
                 session["name"] = student["name"]
+                session["theme"] = student["theme"]
 
                 return redirect(url_for("student_dashboard"))
 
@@ -129,6 +160,68 @@ def logout():
     session.clear()
     #flash("Logged out successfully.")
     return redirect(url_for("login_page"))
+
+# ------------------------------
+# SAVE THEME
+# ------------------------------
+@app.route("/save-theme", methods=["POST"])
+def save_theme():
+
+    if "role" not in session:
+        return {"success": False}, 401
+
+    theme = request.form.get("theme")
+
+    if theme not in ["light", "dark"]:
+        return {"success": False}, 400
+
+    conn = get_db_connection()
+
+    if conn is None:
+        return {"success": False}, 500
+
+    cursor = conn.cursor()
+
+    try:
+
+        if session["role"] == "admin":
+
+            cursor.execute(
+                """
+                UPDATE admins
+                SET theme=%s
+                WHERE id=%s
+                """,
+                (
+                    theme,
+                    session["user_id"]
+                )
+            )
+
+        else:
+
+            cursor.execute(
+                """
+                UPDATE students
+                SET theme=%s
+                WHERE id=%s
+                """,
+                (
+                    theme,
+                    session["user_id"]
+                )
+            )
+
+        conn.commit()
+
+        session["theme"] = theme
+
+        return {"success": True}
+
+    finally:
+
+        cursor.close()
+        conn.close()
 
 
 # ------------------------------
@@ -268,6 +361,7 @@ def add_book():
 # ------------------------------
 # VIEW / UPDATE / DELETE BOOKS
 # ------------------------------
+
 @app.route("/admin/view-books", methods=["GET", "POST"])
 def view_books():
 
@@ -284,12 +378,16 @@ def view_books():
 
     try:
 
+        # ---------------------------------
+        # UPDATE / DELETE
+        # ---------------------------------
+
         if request.method == "POST":
 
             action = request.form.get("action")
             book_id = request.form.get("id")
 
-            # ---------------- UPDATE ----------------
+            # ---------- UPDATE ----------
 
             if action == "update":
 
@@ -328,7 +426,7 @@ def view_books():
 
                 flash("Book updated successfully.")
 
-            # ---------------- DELETE ----------------
+            # ---------- DELETE ----------
 
             elif action == "delete":
 
@@ -349,31 +447,105 @@ def view_books():
                 else:
 
                     cursor.execute("""
-                        DELETE FROM books
+                        DELETE
+                        FROM books
                         WHERE id=%s
                     """, (book_id,))
 
                     conn.commit()
-                    
+
                     log_activity("🗑️ Book deleted.")
 
                     flash("Book deleted successfully.")
 
             return redirect(url_for("view_books"))
 
-        # ---------------- SHOW ALL BOOKS ----------------
+        # ---------------------------------
+        # SEARCH + PAGINATION
+        # ---------------------------------
 
-        cursor.execute("""
-            SELECT *
-            FROM books
-            ORDER BY id 
-        """)
+        page = request.args.get("page", 1, type=int)
+
+        search = request.args.get("search", "").strip()
+
+        per_page = 10
+
+        offset = (page - 1) * per_page
+
+        # ---------- COUNT BOOKS ----------
+
+        if search:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM books
+                WHERE
+                    book_name LIKE %s
+                    OR author LIKE %s
+                    OR category LIKE %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%"
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM books
+            """)
+
+        total_books = cursor.fetchone()["total"]
+
+        total_pages = (total_books + per_page - 1) // per_page
+
+        # ---------- FETCH BOOKS ----------
+
+        if search:
+
+            cursor.execute("""
+                SELECT *
+                FROM books
+                WHERE
+                    book_name LIKE %s
+                    OR author LIKE %s
+                    OR category LIKE %s
+                ORDER BY id
+                LIMIT %s OFFSET %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                per_page,
+                offset
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT *
+                FROM books
+                ORDER BY id
+                LIMIT %s OFFSET %s
+            """,
+            (
+                per_page,
+                offset
+            ))
 
         books = cursor.fetchall()
 
         return render_template(
             "view_books.html",
-            books=books
+            books=books,
+            page=page,
+            per_page=per_page,
+            total_books=total_books,
+            total_pages=total_pages,
+            search=search
         )
 
     except Error as e:
@@ -386,11 +558,383 @@ def view_books():
 
         cursor.close()
         conn.close()
+
+# ------------------------------
+# EXPORT BOOKS (CSV)
+# ------------------------------
+@app.route("/admin/export/books/csv")
+def export_books_csv():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            WHERE
+                book_name LIKE %s
+                OR author LIKE %s
+                OR category LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            ORDER BY id
+        """)
+
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    import csv
+    from io import StringIO
+
+    output = StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "ID",
+        "Book",
+        "Author",
+        "Category",
+        "Quantity"
+    ])
+
+    for book in books:
+
+        writer.writerow([
+            book["id"],
+            book["book_name"],
+            book["author"],
+            book["category"],
+            book["quantity"]
+        ])
+
+    output.seek(0)
+
+    return Response(
+
+        output.getvalue(),
+
+        mimetype="text/csv",
+
+        headers={
+            "Content-Disposition":
+            "attachment; filename=library_books.csv"
+        }
+
+    )
+
+
+# ------------------------------
+# EXPORT BOOKS (EXCEL)
+# ------------------------------
+@app.route("/admin/export/books/excel")
+def export_books_excel():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            WHERE
+                book_name LIKE %s
+                OR author LIKE %s
+                OR category LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            ORDER BY id
+        """)
+
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Library Books"
+
+    headers = [
+        "ID",
+        "Book",
+        "Author",
+        "Category",
+        "Quantity"
+    ]
+
+    for col, header in enumerate(headers, start=1):
+
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+
+    row = 2
+
+    for book in books:
+
+        ws.cell(row=row, column=1).value = book["id"]
+        ws.cell(row=row, column=2).value = book["book_name"]
+        ws.cell(row=row, column=3).value = book["author"]
+        ws.cell(row=row, column=4).value = book["category"]
+        ws.cell(row=row, column=5).value = book["quantity"]
+
+        row += 1
+
+    for column in ws.columns:
+
+        length = max(len(str(cell.value or "")) for cell in column)
+
+        ws.column_dimensions[
+            get_column_letter(column[0].column)
+        ].width = length + 4
+
+    output = BytesIO()
+
+    wb.save(output)
+
+    output.seek(0)
+
+    return Response(
+
+        output.getvalue(),
+
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+        headers={
+            "Content-Disposition":
+            "attachment; filename=library_books.xlsx"
+        }
+
+    )
+
+# ------------------------------
+# EXPORT BOOKS (PDF)
+# ------------------------------
+@app.route("/admin/export/books/pdf")
+def export_books_pdf():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            WHERE
+                book_name LIKE %s
+                OR author LIKE %s
+                OR category LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT
+                id,
+                book_name,
+                author,
+                category,
+                quantity
+            FROM books
+            ORDER BY id
+        """)
+
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4)
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph(
+            "<b><font size=18>Library Management System</font></b>",
+            styles["Title"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            "<b>Books Report</b>",
+            styles["Heading2"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Generated By :</b> {session['name']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Date :</b> {datetime.now().strftime('%d-%m-%Y %I:%M %p')}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Total Books :</b> {len(books)}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph("<br/>", styles["Normal"])
+    )
+
+    table_data = [[
+        "ID",
+        "Book",
+        "Author",
+        "Category",
+        "Quantity"
+    ]]
+
+    for book in books:
+
+        table_data.append([
+            book["id"],
+            book["book_name"],
+            book["author"],
+            book["category"],
+            book["quantity"]
+        ])
+
+    table = Table(table_data)
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND", (0,0), (-1,0), colors.darkblue),
+
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+
+        ("GRID", (0,0), (-1,-1), 1, colors.grey),
+
+        ("BACKGROUND", (0,1), (-1,-1), colors.beige),
+
+        ("BOTTOMPADDING", (0,0), (-1,0), 10),
+
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    pdf = buffer.getvalue()
+
+    buffer.close()
+
+    return Response(
+
+        pdf,
+
+        mimetype="application/pdf",
+
+        headers={
+            "Content-Disposition":
+            "attachment; filename=library_books.pdf"
+        }
+
+    )
+
         
 # ------------------------------
 # ADD STUDENT
 # ------------------------------
 @app.route("/admin/add-student", methods=["GET", "POST"])
+
+
 def add_student():
 
     if session.get("role") != "admin":
@@ -881,9 +1425,333 @@ def student_dashboard():
 
     try:
 
+        # ---------------------------------
+        # Pagination + Search
+        # ---------------------------------
+
+        page = request.args.get("page", 1, type=int)
+
+        search = request.args.get("search", "").strip()
+
+        per_page = 10
+
+        offset = (page - 1) * per_page
+
+        # ---------------------------------
+        # Dashboard Statistics
+        # ---------------------------------
+
+        cursor.execute("""
+            SELECT
+
+                SUM(CASE WHEN status='Issued' THEN 1 ELSE 0 END) AS borrowed_books,
+
+                SUM(CASE WHEN status='Returned' THEN 1 ELSE 0 END) AS returned_books,
+
+                SUM(
+                    CASE
+                        WHEN status='Issued'
+                        AND fine_status='Pending'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS overdue_books,
+
+                SUM(
+                    CASE
+                        WHEN fine_status='Pending'
+                        THEN fine_amount
+                        ELSE 0
+                    END
+                ) AS outstanding_fine
+
+            FROM issued_books
+
+            WHERE student_id=%s
+        """,
+        (
+            session["user_id"],
+        ))
+
+        stats = cursor.fetchone()
+
+        # ---------------------------------
+        # Total Books (for pagination)
+        # ---------------------------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM issued_books i
+                JOIN books b
+                ON i.book_id=b.id
+                WHERE
+                    i.student_id=%s
+                    AND
+                    (
+                        b.book_name LIKE %s
+                        OR b.author LIKE %s
+                    )
+            """,
+            (
+                session["user_id"],
+                f"%{search}%",
+                f"%{search}%"
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM issued_books
+                WHERE student_id=%s
+            """,
+            (
+                session["user_id"],
+            ))
+
+        total_books = cursor.fetchone()["total"]
+
+        total_pages = (total_books + per_page - 1) // per_page
+
+        # ---------------------------------
+        # Fetch Books
+        # ---------------------------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    b.cover_image,
+                    b.book_name,
+                    b.author,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount,
+                    i.fine_status
+                FROM issued_books i
+                JOIN books b
+                ON i.book_id=b.id
+                WHERE
+                    i.student_id=%s
+                    AND
+                    (
+                        b.book_name LIKE %s
+                        OR b.author LIKE %s
+                    )
+                ORDER BY i.id DESC
+                LIMIT %s OFFSET %s
+            """,
+            (
+                session["user_id"],
+                f"%{search}%",
+                f"%{search}%",
+                per_page,
+                offset
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    b.cover_image,
+                    b.book_name,
+                    b.author,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount,
+                    i.fine_status
+                FROM issued_books i
+                JOIN books b
+                ON i.book_id=b.id
+                WHERE i.student_id=%s
+                ORDER BY i.id DESC
+                LIMIT %s OFFSET %s
+            """,
+            (
+                session["user_id"],
+                per_page,
+                offset
+            ))
+
+        books = cursor.fetchall()
+
+        # ---------------------------------
+        # Update Overdue Fines
+        # ---------------------------------
+
+        cursor = conn.cursor(dictionary=True)
+        
+        today = datetime.now().date()
+        
         cursor.execute("""
         SELECT
-            i.id,
+            id,
+            return_date,
+            status
+        FROM issued_books
+        WHERE
+            student_id=%s
+            AND status='Issued'
+        """,
+        (
+            session["user_id"],
+        ))
+        
+        issued_books = cursor.fetchall()
+        
+        for book in issued_books:
+            if today > book["return_date"]:
+                fine = (today - book["return_date"]).days * 5
+                
+                cursor.execute("""
+                UPDATE issued_books
+                SET
+                    fine_amount=%s,
+                    fine_status='Pending'
+                WHERE id=%s
+                """,
+                (
+                    fine,
+                    book["id"]
+                ))
+                
+        conn.commit()        
+
+        return render_template(
+            "student_dashboard.html",
+            name=session["name"],
+            books=books,
+            stats=stats,
+            page=page,
+            per_page=per_page,
+            total_books=total_books,
+            total_pages=total_pages,
+            search=search
+        )
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+# ------------------------------
+# UPLOAD BOOK COVER
+# ------------------------------
+@app.route("/admin/upload-cover/<int:book_id>", methods=["GET", "POST"])
+def upload_book_cover(book_id):
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    conn = get_db_connection()
+
+    if conn is None:
+        flash("Database connection failed.")
+        return redirect(url_for("view_books"))
+
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute(
+            "SELECT * FROM books WHERE id=%s",
+            (book_id,)
+        )
+
+        book = cursor.fetchone()
+
+        if not book:
+
+            flash("Book not found.")
+            return redirect(url_for("view_books"))
+
+        if request.method == "POST":
+
+            file = request.files.get("cover")
+
+            if not file or file.filename == "":
+
+                flash("Please choose an image.")
+                return redirect(request.url)
+
+            if not allowed_file(file.filename):
+
+                flash("Only JPG, JPEG, PNG and WEBP images are allowed.")
+                return redirect(request.url)
+
+            extension = file.filename.rsplit(".", 1)[1].lower()
+
+            filename = f"{book_id}.{extension}"
+
+            # Delete old cover if extension changed
+
+            for ext in ALLOWED_EXTENSIONS:
+
+                old_file = os.path.join(
+                    app.config["UPLOAD_FOLDER"],
+                    f"{book_id}.{ext}"
+                )
+
+                if os.path.exists(old_file):
+
+                    os.remove(old_file)
+
+            filepath = os.path.join(
+                app.config["UPLOAD_FOLDER"],
+                filename
+            )
+
+            file.save(filepath)
+
+            cursor.execute(
+                """
+                UPDATE books
+                SET cover_image=%s
+                WHERE id=%s
+                """,
+                (
+                    filename,
+                    book_id
+                )
+            )
+
+            conn.commit()
+
+            flash("Book cover uploaded successfully.")
+
+            return redirect(url_for("view_books"))
+
+        return render_template(
+            "upload_cover.html",
+            book=book
+        )
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+# ------------------------------
+# EXPORT STUDENT BOOKS (CSV)
+# ------------------------------
+@app.route("/student/export/csv")
+def export_student_csv():
+
+    if session.get("role") != "student":
+        return redirect(url_for("login_page"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
             b.book_name,
             b.author,
             i.issue_date,
@@ -892,51 +1760,306 @@ def student_dashboard():
             i.fine_amount
         FROM issued_books i
         JOIN books b
-        ON i.book_id=b.id
+            ON i.book_id = b.id
         WHERE i.student_id=%s
         ORDER BY i.id DESC
-        """,
-        (
-            session["user_id"],
-        ))
+    """,
+    (
+        session["user_id"],
+    ))
 
-        books = cursor.fetchall()
+    books = cursor.fetchall()
 
-        today = datetime.now().date()
+    cursor.close()
+    conn.close()
 
-        for book in books:
+    import csv
+    from io import StringIO
+    from flask import Response
 
-            if book["status"] == "Issued":
+    output = StringIO()
 
-                if today > book["return_date"]:
+    writer = csv.writer(output)
 
-                    fine = (today-book["return_date"]).days * 5
+    writer.writerow([
+        "Book",
+        "Author",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine"
+    ])
 
-                    cursor.execute("""
-                        UPDATE issued_books
-                        SET fine_amount=%s
-                        WHERE id=%s
-                    """,
-                    (
-                        fine,
-                        book["id"]
-                    ))
+    for book in books:
 
-                    book["fine_amount"] = fine
+        writer.writerow([
+            book["book_name"],
+            book["author"],
+            book["issue_date"],
+            book["return_date"],
+            book["status"],
+            book["fine_amount"]
+        ])
 
-        conn.commit()
+    output.seek(0)
 
-        return render_template(
-            "student_dashboard.html",
-            name=session["name"],
-            books=books
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition":
+            "attachment; filename=my_books.csv"
+        }
+    )
+
+# ------------------------------
+# EXPORT STUDENT BOOKS (EXCEL)
+# ------------------------------
+@app.route("/student/export/excel")
+def export_student_excel():
+
+    if session.get("role") != "student":
+        return redirect(url_for("login_page"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+            b.book_name,
+            b.author,
+            i.issue_date,
+            i.return_date,
+            i.status,
+            i.fine_amount
+        FROM issued_books i
+        JOIN books b
+            ON i.book_id = b.id
+        WHERE i.student_id=%s
+        ORDER BY i.id DESC
+    """,
+    (
+        session["user_id"],
+    ))
+
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "My Books"
+
+    headers = [
+        "Book",
+        "Author",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine"
+    ]
+
+    for col, header in enumerate(headers, start=1):
+
+        cell = ws.cell(row=1, column=col)
+
+        cell.value = header
+        cell.font = Font(bold=True)
+
+    row = 2
+
+    for book in books:
+
+        ws.cell(row=row, column=1).value = book["book_name"]
+        ws.cell(row=row, column=2).value = book["author"]
+        ws.cell(row=row, column=3).value = str(book["issue_date"])
+        ws.cell(row=row, column=4).value = str(book["return_date"])
+        ws.cell(row=row, column=5).value = book["status"]
+        ws.cell(row=row, column=6).value = book["fine_amount"]
+
+        row += 1
+
+    for column in ws.columns:
+
+        length = max(len(str(cell.value or "")) for cell in column)
+
+        ws.column_dimensions[
+            get_column_letter(column[0].column)
+        ].width = length + 4
+
+    output = BytesIO()
+
+    wb.save(output)
+
+    output.seek(0)
+
+    return Response(
+
+        output.getvalue(),
+
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+        headers={
+            "Content-Disposition":
+            "attachment; filename=my_books.xlsx"
+        }
+
+    )
+
+# ------------------------------
+# EXPORT STUDENT BOOKS (PDF)
+# ------------------------------
+@app.route("/student/export/pdf")
+def export_student_pdf():
+
+    if session.get("role") != "student":
+        return redirect(url_for("login_page"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+            b.book_name,
+            b.author,
+            i.issue_date,
+            i.return_date,
+            i.status,
+            i.fine_amount
+        FROM issued_books i
+        JOIN books b
+            ON i.book_id=b.id
+        WHERE i.student_id=%s
+        ORDER BY i.id DESC
+    """,
+    (
+        session["user_id"],
+    ))
+
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4)
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph(
+            "<b><font size=18>Library Management System</font></b>",
+            styles["Title"]
         )
+    )
 
-    finally:
+    elements.append(
+        Paragraph(
+            f"<b>Student :</b> {session['name']}",
+            styles["Normal"]
+        )
+    )
 
-        cursor.close()
-        conn.close()
+    elements.append(
+        Paragraph(
+            f"<b>Generated :</b> {datetime.now().strftime('%d-%m-%Y %I:%M %p')}",
+            styles["Normal"]
+        )
+    )
 
+    elements.append(
+        Paragraph("<br/>", styles["Normal"])
+    )
+
+    total_fine = sum(book["fine_amount"] for book in books)
+
+    elements.append(
+        Paragraph(
+            f"<b>Total Books :</b> {len(books)}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Outstanding Fine :</b> ₹{total_fine}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph("<br/>", styles["Normal"])
+    )
+
+    table_data = [[
+        "Book",
+        "Author",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine"
+    ]]
+
+    for book in books:
+
+        table_data.append([
+            book["book_name"],
+            book["author"],
+            str(book["issue_date"]),
+            str(book["return_date"]),
+            book["status"],
+            f"₹{book['fine_amount']}"
+        ])
+
+    table = Table(table_data)
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,0),colors.darkblue),
+
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+
+        ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+
+        ("GRID",(0,0),(-1,-1),1,colors.grey),
+
+        ("BACKGROUND",(0,1),(-1,-1),colors.beige),
+
+        ("BOTTOMPADDING",(0,0),(-1,0),10),
+
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    pdf = buffer.getvalue()
+
+    buffer.close()
+
+    return Response(
+
+        pdf,
+
+        mimetype="application/pdf",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=my_books.pdf"
+
+        }
+
+    )
 
 # ------------------------------
 # MAIN

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}
+Upload Book Cover
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:600px;margin:auto;">
+
+    <h1 class="page-title">
+
+        Upload Book Cover
+
+    </h1>
+
+    <p class="subtitle">
+
+        {{ book.book_name }}
+
+    </p>
+
+    {% if book.cover_image %}
+
+    <div style="text-align:center;margin-bottom:25px;">
+
+        <img src="{{ url_for('static', filename='uploads/books/' ~ book.cover_image) }}" class="book-cover"
+            style="width:180px;height:240px;">
+
+    </div>
+
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <div class="form-group">
+
+            <label>
+
+                Choose Image
+
+            </label>
+
+            <input type="file" name="cover" accept=".jpg,.jpeg,.png,.webp" required>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button type="submit" class="btn btn-success">
+
+                <i class="fa-solid fa-upload"></i>
+
+                Upload Cover
+
+            </button>
+
+            <a href="{{ url_for('view_books') }}" class="btn btn-outline">
+
+                <i class="fa-solid fa-arrow-left"></i>
+
+                Back
+
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

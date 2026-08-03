@@ -8,104 +8,88 @@ Add Student
 
 <div class="card" style="max-width:650px;margin:auto;">
 
-<h1 class="page-title">
+    <h1 class="page-title">
 
-Register Student
+        Register Student
 
-</h1>
+    </h1>
 
-<p class="subtitle">
+    <p class="subtitle">
 
-Create a new student account.
+        Create a new student account.
 
-</p>
+    </p>
 
-<form method="POST">
+    <form method="POST">
 
-<div class="form-group">
+        <div class="form-group">
 
-<label>Full Name</label>
+            <label>Full Name</label>
 
-<input
-type="text"
-name="name"
-required>
+            <input type="text" name="name" required>
 
-</div>
+        </div>
 
-<div class="form-group">
+        <div class="form-group">
 
-<label>Class</label>
+            <label>Class</label>
 
-<input
-type="text"
-name="class"
-required>
+            <input type="text" name="class" required>
 
-</div>
+        </div>
 
-<div class="form-group">
+        <div class="form-group">
 
-<label>Phone Number</label>
+            <label>Phone Number</label>
 
-<input
-type="text"
-name="phone"
-required>
+            <input type="text" name="phone" required>
 
-</div>
+        </div>
 
-<div class="form-group">
+        <div class="form-group">
 
-<label>Password</label>
+            <label>Password</label>
 
-<!-- <input
+            <!-- <input
 type="password"
 name="password"
 value="student123"
 required> -->
 
-<div class="password-box">
+            <div class="password-box">
 
-    <input
-        type="password"
-        id="password"
-        name="password"
-        placeholder="Set Account Password"
-        value="student123"
-        required
-    >
+                <input type="password" id="password" name="password" placeholder="Set Account Password"
+                    value="student123" required>
 
-    <button
-        type="button"
-        id="togglePassword"
-        class="password-toggle"
-        aria-label="Show or hide password"
-    >
-        <i class="fa-solid fa-eye-slash"></i>
-    </button>
+                <button type="button" id="togglePassword" class="password-toggle" aria-label="Show or hide password">
+                    <i class="fa-solid fa-eye-slash"></i>
+                </button>
 
-</div>
+            </div>
 
-</div>
+        </div>
 
-<button
-type="submit"
-class="btn btn-success">
+        <div class="form-actions">
 
-Register Student
+            <button type="submit" class="btn btn-success">
 
-</button>
+                <i class="fa-solid fa-user-plus"></i>
 
-<a
-href="{{ url_for('admin_dashboard') }}"
-class="btn btn-secondary">
+                Register Student
 
-Back
+            </button>
 
-</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">
 
-</form>
+                <i class="fa-solid fa-arrow-left"></i>
+
+                Back
+
+            </a>
+
+        </div>
+
+    </form>
 
 </div>
 
