@@ -1,5 +1,17 @@
+import email
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    Response,
+    send_file,
+    make_response
+)
 import mysql.connector
 from mysql.connector import Error
 #from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,15 +20,13 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from io import BytesIO
-from io import BytesIO
-from flask import Response
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.units import inch
-from datetime import datetime
-
+import csv
+import io
 
 app = Flask(__name__)
 
@@ -296,6 +306,235 @@ def admin_dashboard():
 
         cursor.close()
         conn.close()
+
+# ------------------------------
+# ADMIN PROFILE
+# ------------------------------
+@app.route("/admin/profile", methods=["GET", "POST"])
+def admin_profile():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    conn = get_db_connection()
+
+    if conn is None:
+        flash("Database connection failed.")
+        return redirect(url_for("admin_dashboard"))
+
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        if request.method == "POST":
+
+            name = request.form.get("name").strip()
+            username = request.form.get("username").strip()
+            email = request.form.get("email").strip()
+
+            image = request.files.get("profile_image")
+
+            current_password = request.form.get("current_password", "").strip()
+            new_password = request.form.get("new_password", "").strip()
+            confirm_password = request.form.get("confirm_password", "").strip()
+
+            if not name or not username or not email:
+
+                flash("All fields are required.")
+
+                return redirect(url_for("admin_profile"))
+
+            # ------------------------------
+            # Upload Profile Picture
+            # ------------------------------
+
+            filename = None
+
+            if image and image.filename != "":
+
+                extension = image.filename.rsplit(".", 1)[1].lower()
+
+                filename = f"admin.{extension}"
+
+                image.save(
+                    os.path.join(
+                        app.static_folder,
+                        "uploads",
+                        "profiles",
+                        filename
+                    )
+                )
+
+            # ------------------------------
+            # Change Password
+            # ------------------------------
+
+            password = None
+
+            if current_password or new_password or confirm_password:
+
+                if not current_password or not new_password or not confirm_password:
+
+                    flash("Please fill all password fields.")
+
+                    return redirect(url_for("admin_profile"))
+
+                cursor.execute("""
+                    SELECT password
+                    FROM admins
+                    WHERE id=%s
+                """,
+                (
+                    1,
+                ))
+
+                admin_data = cursor.fetchone()
+
+                if admin_data["password"] != current_password:
+
+                    flash("Current password is incorrect.")
+
+                    return redirect(url_for("admin_profile"))
+
+                if new_password != confirm_password:
+
+                    flash("New password and confirm password do not match.")
+
+                    return redirect(url_for("admin_profile"))
+
+                password = new_password
+
+            # ------------------------------
+            # Update Profile
+            # ------------------------------
+
+            if filename and password:
+
+                cursor.execute("""
+                    UPDATE admins
+                    SET
+                        name=%s,
+                        username=%s,
+                        email=%s,
+                        password=%s,
+                        profile_image=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    username,
+                    email,
+                    password,
+                    filename,
+                    1
+                ))
+
+            elif filename:
+
+                cursor.execute("""
+                    UPDATE admins
+                    SET
+                        name=%s,
+                        username=%s,
+                        email=%s,
+                        profile_image=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    username,
+                    email,
+                    filename,
+                    1
+                ))
+
+            elif password:
+
+                cursor.execute("""
+                    UPDATE admins
+                    SET
+                        name=%s,
+                        username=%s,
+                        email=%s,
+                        password=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    username,
+                    email,
+                    password,
+                    1
+                ))
+
+            else:
+
+                cursor.execute("""
+                    UPDATE admins
+                    SET
+                        name=%s,
+                        username=%s,
+                        email=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    username,
+                    email,
+                    1
+                ))
+
+            conn.commit()
+
+            session["name"] = name
+            session["username"] = username
+
+            if password:
+
+                flash("Profile and password updated successfully.")
+
+            else:
+
+                flash("Profile updated successfully.")
+
+            return redirect(url_for("admin_profile"))
+
+        # ------------------------------
+        # Load Admin Details
+        # ------------------------------
+
+        cursor.execute("""
+            SELECT
+                id,
+                name,
+                username,
+                email,
+                profile_image
+            FROM admins
+            WHERE id=%s
+        """,
+        (
+            1,
+        ))
+
+        admin = cursor.fetchone()
+
+        return render_template(
+            "admin_profile.html",
+            admin=admin
+        )
+
+    except Exception as e:
+
+        flash(f"An error occurred: {e}")
+
+        return redirect(url_for("admin_dashboard"))
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
 
 # ------------------------------
 # ADD BOOK
@@ -933,8 +1172,6 @@ def export_books_pdf():
 # ADD STUDENT
 # ------------------------------
 @app.route("/admin/add-student", methods=["GET", "POST"])
-
-
 def add_student():
 
     if session.get("role") != "admin":
@@ -1024,12 +1261,12 @@ def view_students():
 
     try:
 
+        # ---------------- UPDATE / DELETE ----------------
+
         if request.method == "POST":
 
             action = request.form.get("action")
             student_id = request.form.get("id")
-
-            # ---------------- UPDATE ----------------
 
             if action == "update":
 
@@ -1037,10 +1274,6 @@ def view_students():
                 student_class = request.form.get("class").strip()
                 phone = request.form.get("phone").strip()
                 password = request.form.get("password").strip()
-
-                if not phone.isdigit() or len(phone) != 10:
-                    flash("Invalid phone number.")
-                    return redirect(url_for("view_students"))
 
                 cursor.execute("""
                     UPDATE students
@@ -1063,8 +1296,6 @@ def view_students():
 
                 flash("Student updated successfully.")
 
-            # ---------------- DELETE ----------------
-
             elif action == "delete":
 
                 cursor.execute("""
@@ -1079,7 +1310,7 @@ def view_students():
 
                 if active["total"] > 0:
 
-                    flash("Student has issued books. Return them first.")
+                    flash("Student cannot be deleted because books are still issued.")
 
                 else:
 
@@ -1089,25 +1320,100 @@ def view_students():
                     """, (student_id,))
 
                     conn.commit()
-                    
+
                     log_activity("🗑️ Student deleted.")
-                    
 
                     flash("Student deleted successfully.")
 
             return redirect(url_for("view_students"))
 
-        cursor.execute("""
-            SELECT *
-            FROM students
-            ORDER BY id 
-        """)
+        # ---------------- SEARCH + PAGINATION ----------------
+
+        page = request.args.get("page", 1, type=int)
+        search = request.args.get("search", "").strip()
+
+        per_page = 10
+
+        offset = (page - 1) * per_page
+
+        # ---------------- COUNT ----------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM students
+                WHERE
+                    id LIKE %s
+                    OR name LIKE %s
+                    OR class LIKE %s
+                    OR phone LIKE %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%"
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM students
+            """)
+
+        total_students = cursor.fetchone()["total"]
+
+        total_pages = (total_students + per_page - 1) // per_page
+
+        # ---------------- FETCH DATA ----------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT *
+                FROM students
+                WHERE
+                    id LIKE %s
+                    OR name LIKE %s
+                    OR class LIKE %s
+                    OR phone LIKE %s
+                ORDER BY id
+                LIMIT %s OFFSET %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                per_page,
+                offset
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT *
+                FROM students
+                ORDER BY id
+                LIMIT %s OFFSET %s
+            """,
+            (
+                per_page,
+                offset
+            ))
 
         students = cursor.fetchall()
 
         return render_template(
             "view_students.html",
-            students=students
+            students=students,
+            page=page,
+            per_page=per_page,
+            total_students=total_students,
+            total_pages=total_pages,
+            search=search
         )
 
     except Error as e:
@@ -1121,7 +1427,276 @@ def view_students():
         cursor.close()
         conn.close()
 
+# ------------------------------
+# EXPORT STUDENTS CSV
+# ------------------------------
+@app.route("/admin/export/students/csv")
+def export_students_csv():
 
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            WHERE
+                id LIKE %s
+                OR name LIKE %s
+                OR class LIKE %s
+                OR phone LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            ORDER BY id
+        """)
+
+    students = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "ID",
+        "Name",
+        "Class",
+        "Phone",
+        "Password"
+    ])
+
+    for s in students:
+
+        writer.writerow([
+            s["id"],
+            s["name"],
+            s["class"],
+            s["phone"],
+            s["password"]
+        ])
+
+    response = make_response(output.getvalue())
+
+    response.headers["Content-Disposition"] = \
+        "attachment; filename=students_report.csv"
+
+    response.headers["Content-Type"] = "text/csv"
+
+    return response
+
+# ------------------------------
+# EXPORT STUDENTS EXCEL
+# ------------------------------
+@app.route("/admin/export/students/excel")
+def export_students_excel():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            WHERE
+                id LIKE %s
+                OR name LIKE %s
+                OR class LIKE %s
+                OR phone LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            ORDER BY id
+        """)
+
+    students = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    workbook = Workbook()
+
+    sheet = workbook.active
+
+    sheet.title = "Students"
+
+    headers = [
+        "ID",
+        "Name",
+        "Class",
+        "Phone",
+        "Password"
+    ]
+
+    sheet.append(headers)
+
+    for cell in sheet[1]:
+
+        cell.font = Font(bold=True)
+
+    for s in students:
+
+        sheet.append([
+            s["id"],
+            s["name"],
+            s["class"],
+            s["phone"],
+            s["password"]
+        ])
+
+    output = BytesIO()
+
+    workbook.save(output)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="students_report.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# ------------------------------
+# EXPORT STUDENTS PDF
+# ------------------------------
+@app.route("/admin/export/students/pdf")
+def export_students_pdf():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            WHERE
+                id LIKE %s
+                OR name LIKE %s
+                OR class LIKE %s
+                OR phone LIKE %s
+            ORDER BY id
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT id,name,class,phone,password
+            FROM students
+            ORDER BY id
+        """)
+
+    students = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph("<b>Students Report</b>", styles["Title"])
+    )
+
+    elements.append(Spacer(1, 12))
+
+    data = [[
+        "ID",
+        "Name",
+        "Class",
+        "Phone",
+        "Password"
+    ]]
+
+    for s in students:
+
+        data.append([
+            s["id"],
+            s["name"],
+            s["class"],
+            s["phone"],
+            s["password"]
+        ])
+
+    table = Table(data)
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND",(0,0),(-1,0),colors.darkblue),
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+        ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+        ("GRID",(0,0),(-1,-1),1,colors.black),
+        ("BOTTOMPADDING",(0,0),(-1,0),10),
+        ("BACKGROUND",(0,1),(-1,-1),colors.beige)
+
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="students_report.pdf",
+        mimetype="application/pdf"
+    )
 
 # ------------------------------
 # ISSUE BOOK
@@ -1254,20 +1829,100 @@ def view_issued_books():
 
     try:
 
-        cursor.execute("""
-        SELECT
-            i.id,
-            s.name AS student_name,
-            b.book_name,
-            i.issue_date,
-            i.return_date,
-            i.status,
-            i.fine_amount
-        FROM issued_books i
-        JOIN students s ON i.student_id=s.id
-        JOIN books b ON i.book_id=b.id
-        ORDER BY i.id DESC
-        """)
+        page = request.args.get("page", 1, type=int)
+        search = request.args.get("search", "").strip()
+
+        per_page = 10
+
+        offset = (page - 1) * per_page
+
+        # ---------------- COUNT ----------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM issued_books i
+                JOIN students s ON i.student_id=s.id
+                JOIN books b ON i.book_id=b.id
+                WHERE
+                    s.name LIKE %s
+                    OR b.book_name LIKE %s
+                    OR i.status LIKE %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%"
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM issued_books
+            """)
+
+        total_records = cursor.fetchone()["total"]
+
+        total_pages = (total_records + per_page - 1) // per_page
+
+        # ---------------- FETCH ----------------
+
+        if search:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    s.name AS student_name,
+                    b.book_name,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount
+                FROM issued_books i
+                JOIN students s
+                    ON i.student_id=s.id
+                JOIN books b
+                    ON i.book_id=b.id
+                WHERE
+                    s.name LIKE %s
+                    OR b.book_name LIKE %s
+                    OR i.status LIKE %s
+                ORDER BY i.id DESC
+                LIMIT %s OFFSET %s
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                per_page,
+                offset
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    s.name AS student_name,
+                    b.book_name,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount
+                FROM issued_books i
+                JOIN students s
+                    ON i.student_id=s.id
+                JOIN books b
+                    ON i.book_id=b.id
+                ORDER BY i.id DESC
+                LIMIT %s OFFSET %s
+            """,
+            (
+                per_page,
+                offset
+            ))
 
         issued = cursor.fetchall()
 
@@ -1277,11 +1932,9 @@ def view_issued_books():
 
             if record["status"] == "Issued":
 
-                due = record["return_date"]
+                if today > record["return_date"]:
 
-                if today > due:
-
-                    fine = (today - due).days * 5
+                    fine = (today - record["return_date"]).days * 5
 
                     cursor.execute("""
                         UPDATE issued_books
@@ -1299,7 +1952,12 @@ def view_issued_books():
 
         return render_template(
             "view_issued.html",
-            issued=issued
+            issued=issued,
+            page=page,
+            per_page=per_page,
+            total_records=total_records,
+            total_pages=total_pages,
+            search=search
         )
 
     finally:
@@ -1307,6 +1965,381 @@ def view_issued_books():
         cursor.close()
         conn.close()
 
+
+# ------------------------------
+# EXPORT ISSUED BOOKS CSV
+# ------------------------------
+@app.route("/admin/export/issued/csv")
+def export_issued_csv():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT
+                i.id,
+                s.name AS student_name,
+                b.book_name,
+                i.issue_date,
+                i.return_date,
+                i.status,
+                i.fine_amount
+            FROM issued_books i
+            JOIN students s ON i.student_id=s.id
+            JOIN books b ON i.book_id=b.id
+            WHERE
+                s.name LIKE %s
+                OR b.book_name LIKE %s
+                OR i.status LIKE %s
+            ORDER BY i.id DESC
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT
+                i.id,
+                s.name AS student_name,
+                b.book_name,
+                i.issue_date,
+                i.return_date,
+                i.status,
+                i.fine_amount
+            FROM issued_books i
+            JOIN students s ON i.student_id=s.id
+            JOIN books b ON i.book_id=b.id
+            ORDER BY i.id DESC
+        """)
+
+    issued = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Sr. No.",
+        "Student",
+        "Book",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine"
+    ])
+
+    for i in issued:
+
+        writer.writerow([
+            i["id"],
+            i["student_name"],
+            i["book_name"],
+            i["issue_date"],
+            i["return_date"],
+            i["status"],
+            i["fine_amount"]
+        ])
+
+    response = make_response(output.getvalue())
+
+    response.headers["Content-Disposition"] = \
+        "attachment; filename=issued_books_report.csv"
+
+    response.headers["Content-Type"] = "text/csv"
+
+    return response
+
+# ------------------------------
+# EXPORT ISSUED BOOKS EXCEL
+# ------------------------------
+@app.route("/admin/export/issued/excel")
+def export_issued_excel():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if search:
+
+        cursor.execute("""
+            SELECT
+                i.id,
+                s.name AS student_name,
+                b.book_name,
+                i.issue_date,
+                i.return_date,
+                i.status,
+                i.fine_amount
+            FROM issued_books i
+            JOIN students s
+                ON i.student_id = s.id
+            JOIN books b
+                ON i.book_id = b.id
+            WHERE
+                s.name LIKE %s
+                OR b.book_name LIKE %s
+                OR i.status LIKE %s
+            ORDER BY i.id DESC
+        """,
+        (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT
+                i.id,
+                s.name AS student_name,
+                b.book_name,
+                i.issue_date,
+                i.return_date,
+                i.status,
+                i.fine_amount
+            FROM issued_books i
+            JOIN students s
+                ON i.student_id = s.id
+            JOIN books b
+                ON i.book_id = b.id
+            ORDER BY i.id DESC
+        """)
+
+    issued = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    workbook = Workbook()
+
+    sheet = workbook.active
+
+    sheet.title = "Issued Books"
+
+    headers = [
+        "Sr. No.",
+        "Student",
+        "Book",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine (INR)"
+    ]
+
+    sheet.append(headers)
+
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+
+    for record in issued:
+
+        sheet.append([
+            record["id"],
+            record["student_name"],
+            record["book_name"],
+            record["issue_date"],
+            record["return_date"],
+            record["status"],
+            record["fine_amount"]
+        ])
+
+    # Auto-size columns
+
+    for column in sheet.columns:
+
+        max_length = 0
+
+        column_letter = get_column_letter(column[0].column)
+
+        for cell in column:
+
+            try:
+
+                if len(str(cell.value)) > max_length:
+
+                    max_length = len(str(cell.value))
+
+            except:
+
+                pass
+
+        sheet.column_dimensions[column_letter].width = max_length + 3
+
+    output = BytesIO()
+
+    workbook.save(output)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="issued_books_report.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# ------------------------------
+# EXPORT ISSUED BOOKS PDF
+# ------------------------------
+@app.route("/admin/export/issued/pdf")
+def export_issued_pdf():
+
+    if session.get("role") != "admin":
+        return redirect(url_for("login_page"))
+
+    search = request.args.get("search", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        if search:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    s.name AS student_name,
+                    b.book_name,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount
+                FROM issued_books i
+                JOIN students s
+                    ON i.student_id = s.id
+                JOIN books b
+                    ON i.book_id = b.id
+                WHERE
+                    s.name LIKE %s
+                    OR b.book_name LIKE %s
+                    OR i.status LIKE %s
+                ORDER BY i.id DESC
+            """,
+            (
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%"
+            ))
+
+        else:
+
+            cursor.execute("""
+                SELECT
+                    i.id,
+                    s.name AS student_name,
+                    b.book_name,
+                    i.issue_date,
+                    i.return_date,
+                    i.status,
+                    i.fine_amount
+                FROM issued_books i
+                JOIN students s
+                    ON i.student_id = s.id
+                JOIN books b
+                    ON i.book_id = b.id
+                ORDER BY i.id DESC
+            """)
+
+        issued = cursor.fetchall()
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4)
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph("<b>Issued Books Report</b>", styles["Title"])
+    )
+
+    elements.append(Spacer(1, 12))
+
+    data = [[
+        "Sr. No.",
+        "Student",
+        "Book",
+        "Issue Date",
+        "Return Date",
+        "Status",
+        "Fine (INR)"
+    ]]
+
+    for record in issued:
+
+        data.append([
+            record["id"],
+            record["student_name"],
+            record["book_name"],
+            str(record["issue_date"]),
+            str(record["return_date"]),
+            record["status"],
+            record["fine_amount"]
+        ])
+
+    table = Table(data)
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+
+        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+        ("TOPPADDING", (0, 1), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="issued_books_report.pdf",
+        mimetype="application/pdf"
+    )
 
 # ------------------------------
 # RETURN BOOK
@@ -1640,6 +2673,222 @@ def student_dashboard():
         cursor.close()
         conn.close()
 
+
+# ------------------------------
+# STUDENT PROFILE
+# ------------------------------
+@app.route("/student/profile", methods=["GET", "POST"])
+def student_profile():
+
+    if session.get("role") != "student":
+        return redirect(url_for("login_page"))
+
+    student_id = session.get("user_id")
+
+    conn = get_db_connection()
+
+    if conn is None:
+        flash("Database connection failed.")
+        return redirect(url_for("student_dashboard"))
+
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        if request.method == "POST":
+
+            name = request.form.get("name").strip()
+            email = request.form.get("email").strip()
+
+            image = request.files.get("profile_image")
+
+            current_password = request.form.get("current_password", "").strip()
+            new_password = request.form.get("new_password", "").strip()
+            confirm_password = request.form.get("confirm_password", "").strip()
+
+            if not name or not email:
+
+                flash("All fields are required.")
+                return redirect(url_for("student_profile"))
+
+            # ------------------------------
+            # Upload Profile Picture
+            # ------------------------------
+
+            filename = None
+
+            if image and image.filename != "":
+
+                extension = image.filename.rsplit(".", 1)[1].lower()
+
+                filename = f"{student_id}.{extension}"
+
+                image.save(
+                    os.path.join(
+                        app.static_folder,
+                        "uploads",
+                        "profiles",
+                        filename
+                    )
+                )
+
+            # ------------------------------
+            # Change Password
+            # ------------------------------
+
+            password = None
+
+            if current_password or new_password or confirm_password:
+
+                if not current_password or not new_password or not confirm_password:
+
+                    flash("Please fill all password fields.")
+                    return redirect(url_for("student_profile"))
+
+                cursor.execute("""
+                    SELECT password
+                    FROM students
+                    WHERE id=%s
+                """,
+                (
+                    student_id,
+                ))
+
+                student_data = cursor.fetchone()
+
+                if student_data["password"] != current_password:
+
+                    flash("Current password is incorrect.")
+                    return redirect(url_for("student_profile"))
+
+                if new_password != confirm_password:
+
+                    flash("New password and confirm password do not match.")
+                    return redirect(url_for("student_profile"))
+
+                password = new_password
+
+            # ------------------------------
+            # Update Profile
+            # ------------------------------
+
+            if filename and password:
+
+                cursor.execute("""
+                    UPDATE students
+                    SET
+                        name=%s,
+                        email=%s,
+                        password=%s,
+                        profile_image=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    email,
+                    password,
+                    filename,
+                    student_id
+                ))
+
+            elif filename:
+
+                cursor.execute("""
+                    UPDATE students
+                    SET
+                        name=%s,
+                        email=%s,
+                        profile_image=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    email,
+                    filename,
+                    student_id
+                ))
+
+            elif password:
+
+                cursor.execute("""
+                    UPDATE students
+                    SET
+                        name=%s,
+                        email=%s,
+                        password=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    email,
+                    password,
+                    student_id
+                ))
+
+            else:
+
+                cursor.execute("""
+                    UPDATE students
+                    SET
+                        name=%s,
+                        email=%s
+                    WHERE id=%s
+                """,
+                (
+                    name,
+                    email,
+                    student_id
+                ))
+
+            conn.commit()
+
+            session["name"] = name
+
+            if password:
+
+                flash("Profile and password updated successfully.")
+
+            else:
+
+                flash("Profile updated successfully.")
+
+            return redirect(url_for("student_profile"))
+
+        # ------------------------------
+        # Load Student Details
+        # ------------------------------
+
+        cursor.execute("""
+            SELECT
+                id,
+                name,
+                class,
+                phone,
+                email,
+                profile_image
+            FROM students
+            WHERE id=%s
+        """,
+        (
+            student_id,
+        ))
+
+        student = cursor.fetchone()
+
+        return render_template(
+            "student_profile.html",
+            student=student
+        )
+
+    except Exception as e:
+
+        flash(f"An error occurred: {e}")
+        return redirect(url_for("student_dashboard"))
+
+    finally:
+
+        cursor.close()
+        conn.close()
 
 # ------------------------------
 # UPLOAD BOOK COVER
@@ -1989,7 +3238,7 @@ def export_student_pdf():
 
     elements.append(
         Paragraph(
-            f"<b>Outstanding Fine :</b> ₹{total_fine}",
+            f"<b>Outstanding Fine :</b> INR {total_fine}",
             styles["Normal"]
         )
     )
@@ -2004,7 +3253,7 @@ def export_student_pdf():
         "Issue Date",
         "Return Date",
         "Status",
-        "Fine"
+        "Fine (INR)"
     ]]
 
     for book in books:
@@ -2015,7 +3264,7 @@ def export_student_pdf():
             str(book["issue_date"]),
             str(book["return_date"]),
             book["status"],
-            f"₹{book['fine_amount']}"
+            f"{book['fine_amount']}"
         ])
 
     table = Table(table_data)

@@ -6,29 +6,19 @@
 // Confirm before deleting
 
 document.addEventListener("DOMContentLoaded", function () {
+  const deleteButtons = document.querySelectorAll("button[value='delete']");
 
-    const deleteButtons = document.querySelectorAll(
-        "button[value='delete']"
-    );
+  deleteButtons.forEach(function (button) {
+    button.addEventListener("click", function (e) {
+      const confirmDelete = confirm(
+        "Are you sure you want to delete this record?",
+      );
 
-    deleteButtons.forEach(function (button) {
-
-        button.addEventListener("click", function (e) {
-
-            const confirmDelete = confirm(
-                "Are you sure you want to delete this record?"
-            );
-
-            if (!confirmDelete) {
-
-                e.preventDefault();
-
-            }
-
-        });
-
+      if (!confirmDelete) {
+        e.preventDefault();
+      }
     });
-
+  });
 });
 
 // ================================
@@ -38,26 +28,18 @@ document.addEventListener("DOMContentLoaded", function () {
 const togglePassword = document.getElementById("togglePassword");
 
 if (togglePassword) {
+  togglePassword.addEventListener("click", function () {
+    const password = document.getElementById("password");
+    const icon = this.querySelector("i");
 
-    togglePassword.addEventListener("click", function () {
-
-        const password = document.getElementById("password");
-        const icon = this.querySelector("i");
-
-        if (password.type === "password") {
-
-            password.type = "text";
-            icon.classList.replace("fa-eye-slash", "fa-eye");
-
-        } else {
-
-            password.type = "password";
-            icon.classList.replace("fa-eye", "fa-eye-slash");
-
-        }
-
-    });
-
+    if (password.type === "password") {
+      password.type = "text";
+      icon.classList.replace("fa-eye-slash", "fa-eye");
+    } else {
+      password.type = "password";
+      icon.classList.replace("fa-eye", "fa-eye-slash");
+    }
+  });
 }
 
 // ======================================
@@ -65,26 +47,18 @@ if (togglePassword) {
 // ======================================
 
 document.addEventListener("DOMContentLoaded", function () {
+  const flash = document.querySelector(".flash-message");
 
-    const flash = document.querySelector(".flash-message");
+  if (flash) {
+    setTimeout(function () {
+      flash.style.transition = "0.5s";
+      flash.style.opacity = "0";
 
-    if (flash) {
-
-        setTimeout(function () {
-
-            flash.style.transition = "0.5s";
-            flash.style.opacity = "0";
-
-            setTimeout(function () {
-
-                flash.remove();
-
-            }, 500);
-
-        }, 3000);
-
-    }
-
+      setTimeout(function () {
+        flash.remove();
+      }, 500);
+    }, 3000);
+  }
 });
 
 // ==========================
@@ -94,66 +68,91 @@ document.addEventListener("DOMContentLoaded", function () {
 const themeBtn = document.getElementById("themeToggle");
 
 if (themeBtn) {
+  const icon = themeBtn.querySelector("i");
 
-    const icon = themeBtn.querySelector("i");
+  // Set correct icon based on current theme
+  if (document.body.classList.contains("dark")) {
+    icon.classList.remove("fa-moon");
+    icon.classList.add("fa-sun");
+  }
 
-    // Set correct icon based on current theme
-    if (document.body.classList.contains("dark")) {
+  themeBtn.addEventListener("click", function () {
+    document.body.classList.toggle("dark");
 
-        icon.classList.remove("fa-moon");
-        icon.classList.add("fa-sun");
+    const theme = document.body.classList.contains("dark") ? "dark" : "light";
 
+    // Change icon
+    if (theme === "dark") {
+      icon.classList.remove("fa-moon");
+      icon.classList.add("fa-sun");
+    } else {
+      icon.classList.remove("fa-sun");
+      icon.classList.add("fa-moon");
     }
 
-    themeBtn.addEventListener("click", function () {
+    // Save theme in database
+    fetch("/save-theme", {
+      method: "POST",
 
-        document.body.classList.toggle("dark");
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
 
-        const theme = document.body.classList.contains("dark")
-            ? "dark"
-            : "light";
-
-        // Change icon
-        if (theme === "dark") {
-
-            icon.classList.remove("fa-moon");
-            icon.classList.add("fa-sun");
-
-        } else {
-
-            icon.classList.remove("fa-sun");
-            icon.classList.add("fa-moon");
-
+      body: "theme=" + encodeURIComponent(theme),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.success) {
+          console.error("Theme could not be saved.");
         }
+      })
+      .catch((error) => {
+        console.error("Error saving theme:", error);
+      });
+  });
+}
 
-        // Save theme in database
-        fetch("/save-theme", {
+// ==========================
+// Export Dropdown
+// ==========================
 
-            method: "POST",
+document.addEventListener("DOMContentLoaded", function () {
 
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
+    const dropdowns = document.querySelectorAll(".export-dropdown");
 
-            body: "theme=" + encodeURIComponent(theme)
+    dropdowns.forEach(function(dropdown){
 
-        })
-        .then(response => response.json())
-        .then(data => {
+        const button = dropdown.querySelector(".export-btn");
+        const menu = dropdown.querySelector(".export-menu");
 
-            if (!data.success) {
+        button.addEventListener("click", function(e){
 
-                console.error("Theme could not be saved.");
+            e.stopPropagation();
 
-            }
+            document.querySelectorAll(".export-menu").forEach(function(m){
 
-        })
-        .catch(error => {
+                if(m !== menu){
 
-            console.error("Error saving theme:", error);
+                    m.classList.remove("show");
+
+                }
+
+            });
+
+            menu.classList.toggle("show");
 
         });
 
     });
 
-}
+    document.addEventListener("click", function(){
+
+        document.querySelectorAll(".export-menu").forEach(function(menu){
+
+            menu.classList.remove("show");
+
+        });
+
+    });
+
+});

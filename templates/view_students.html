@@ -6,153 +6,295 @@ View Students
 
 {% block content %}
 
-<a href="{{ url_for('admin_dashboard') }}"
-class="btn btn-secondary back-btn">
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary back-btn">
 
-← Back to Dashboard
+    ← Back to Dashboard
 
 </a>
 
 <div class="card">
 
-<h1 class="page-title">
+    <h1 class="page-title">
 
-Students
+        Students
 
-</h1>
+    </h1>
 
-<p class="subtitle">
+    <p class="subtitle">
 
-Manage registered students.
+        Manage registered students.
 
-</p>
+    </p>
 
-<table class="table">
+    <!-- Search + Export -->
 
-<thead>
+    <div class="table-toolbar">
 
-<tr>
+        <form method="GET" class="search-form">
 
-<th>ID</th>
-<th>Name</th>
-<th>Class</th>
-<th>Phone</th>
-<th>Password</th>
-<th>Actions</th>
+            <input type="text" name="search" class="search-box" placeholder="Search by ID, name, class or phone..."
+                value="{{ search }}">
 
-</tr>
+            <button class="btn btn-primary" type="submit">
 
-</thead>
+                <i class="fa-solid fa-magnifying-glass"></i>
 
-<tbody>
+                Search
 
-{% for s in students %}
+            </button>
 
-<tr>
+            {% if search %}
 
-<form method="POST">
+            <a href="{{ url_for('view_students') }}" class="btn btn-secondary">
 
-<td>
+                Clear
 
-{{ s.id }}
+            </a>
 
-<input
-type="hidden"
-name="id"
-value="{{ s.id }}">
+            {% endif %}
 
-</td>
+        </form>
 
-<td>
+        <div class="export-dropdown">
 
-<input
-type="text"
-name="name"
-value="{{ s.name }}"
-required>
+            <button class="btn btn-primary export-btn" type="button">
 
-</td>
+                <i class="fa-solid fa-download"></i>
 
-<td>
+                Export
 
-<input
-type="text"
-name="class"
-value="{{ s.class }}"
-required>
+                <i class="fa-solid fa-chevron-down"></i>
 
-</td>
+            </button>
 
-<td>
+            <div class="export-menu">
 
-<input
-type="text"
-name="phone"
-value="{{ s.phone }}"
-required>
+                <a href="{{ url_for('export_students_pdf', search=search) }}">
 
-</td>
+                    <i class="fa-solid fa-file-pdf"></i>
 
-<td>
+                    PDF
 
-<input
-type="text"
-name="password"
-value="{{ s.password }}"
-required>
+                </a>
 
-</td>
+                <a href="{{ url_for('export_students_excel', search=search) }}">
 
-<td>
+                    <i class="fa-solid fa-file-excel"></i>
 
-<div class="action-buttons">
+                    Excel
 
-<button
-class="btn btn-primary"
-type="submit"
-name="action"
-value="update">
+                </a>
 
-Update
+                <a href="{{ url_for('export_students_csv', search=search) }}">
 
-</button>
+                    <i class="fa-solid fa-file-csv"></i>
 
-<button
-class="btn btn-danger"
-type="submit"
-name="action"
-value="delete">
+                    CSV
 
-Delete
+                </a>
 
-</button>
+                <a href="#" onclick="window.print(); return false;">
+
+                    <i class="fa-solid fa-print"></i>
+
+                    Print
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <table class="table">
+
+        <thead>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>Name</th>
+
+                <th>Class</th>
+
+                <th>Phone</th>
+
+                <th>Password</th>
+
+                <th>Actions</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for s in students %}
+
+            <tr>
+
+                <form method="POST">
+
+                    <td>
+
+                        {{ s.id }}
+
+                        <input type="hidden" name="id" value="{{ s.id }}">
+
+                    </td>
+
+                    <td>
+
+                        <input type="text" name="name" value="{{ s.name }}" required>
+
+                    </td>
+
+                    <td>
+
+                        <input type="text" name="class" value="{{ s.class }}" required>
+
+                    </td>
+
+                    <td>
+
+                        <input type="text" name="phone" value="{{ s.phone }}" required>
+
+                    </td>
+
+                    <td>
+
+                        <input type="text" name="password" value="{{ s.password }}" required>
+
+                    </td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button class="btn btn-primary" type="submit" name="action" value="update">
+
+                                Update
+
+                            </button>
+
+                            <button class="btn btn-danger" type="submit" name="action" value="delete">
+
+                                Delete
+
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </form>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+
+                <td colspan="6" class="empty-table">
+
+                    No students found.
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <!-- Pagination -->
+
+    <div class="pagination-container">
+
+        <div class="pagination-info">
+
+            Showing
+
+            {{ ((page-1) * per_page) + 1 }}
+
+            to
+
+            {{ [page * per_page, total_students]|min }}
+
+            of
+
+            {{ total_students }}
+
+            students
+
+        </div>
+
+        <div class="pagination">
+
+            {% if page > 1 %}
+
+            <a class="btn btn-secondary" href="{{ url_for('view_students', page=page-1, search=search) }}">
+
+                ← Previous
+
+            </a>
+
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+
+            <a href="{{ url_for('view_students', page=p, search=search) }}"
+                class="page-number {% if p==page %}active{% endif %}">
+
+                {{ p }}
+
+            </a>
+
+            {% endfor %}
+
+            {% if page < total_pages %} <a class="btn btn-secondary"
+                href="{{ url_for('view_students', page=page+1, search=search) }}">
+
+                Next →
+
+                </a>
+
+                {% endif %}
+
+        </div>
+
+    </div>
 
 </div>
 
-</td>
+<script>
+    const searchBox = document.querySelector('input[name="search"]');
 
-</form>
+    let timer;
 
-</tr>
+    searchBox.addEventListener("keyup", function () {
 
-{% else %}
+        clearTimeout(timer);
 
-<tr>
+        timer = setTimeout(function () {
 
-<td colspan="5" class="empty-table">
+            if (searchBox.value.trim() === "") {
 
-No students found.
+                window.location = "/admin/view-students";
 
-</td>
+                return;
 
-</tr>
+            }
 
-{% endfor %}
+            searchBox.form.submit();
 
-</tbody>
+        }, 800);
 
-</table>
-
-</div>
+    });
+</script>
 
 {% endblock %}

@@ -7,6 +7,12 @@ block content %}
 
     <p class="subtitle">Here is an overview of your library account.</p>
   </div>
+  <div>
+    <a href="{{ url_for('student_profile') }}" class="btn btn-primary profile-btn">
+      <i class="fa-solid fa-user"></i>
+      My Profile
+    </a>
+  </div>
 </div>
 
 <!-- Summary Cards -->
@@ -76,21 +82,22 @@ block content %}
       </p>
     </div>
 
-    <div class="table-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
-      <form method="GET" class="table-toolbar">
+    <div class="table-toolbar">
+      <form method="GET" class="search-form">
         <input type="text" name="search" class="search-box" placeholder="Search by book or author..."
           value="{{ search }}" />
 
-        <button class="btn btn-primary" type="submit">
+        <button class="btn btn-primary search-btn" type="submit">
           <i class="fa-solid fa-magnifying-glass"></i>
 
-          Search
+          <span>Search</span>
         </button>
 
         {% if search %}
 
-        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
-          Clear
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary clear-search-btn clear-btn">
+          <span>Clear</span>
+          <i class="fa-solid fa-xmark"></i>
         </a>
 
         {% endif %}
@@ -270,7 +277,7 @@ block content %}
 
     timer = setTimeout(function () {
       if (searchBox.value.trim() === "") {
-        window.location = "/admin/view-books";
+        window.location = "/admin/student_dashboard";
 
         return;
       }

@@ -6,116 +6,311 @@ Issued Books
 
 {% block content %}
 
-<a
-href="{{ url_for('admin_dashboard') }}"
-class="btn btn-secondary back-btn">
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary back-btn">
 
-← Back
+    ← Back to Dashboard
 
 </a>
 
 <div class="card">
 
-<h1 class="page-title">
+    <h1 class="page-title">
 
-Issued Books
+        Issued Books
 
-</h1>
+    </h1>
 
-<p class="subtitle">
+    <p class="subtitle">
 
-Track all issued books.
+        Track all issued books.
 
-</p>
+    </p>
 
-<table class="table">
+    <!-- Search + Export -->
 
-<thead>
+    <div class="table-toolbar">
 
-<tr>
+        <form method="GET" class="search-form">
 
-<th>Sr.no</th>
+            <input type="text" name="search" class="search-box" placeholder="Search by student, book or status..."
+                value="{{ search }}">
 
-<th>Student</th>
+            <button type="submit" class="btn btn-primary">
 
-<th>Book</th>
+                <i class="fa-solid fa-magnifying-glass"></i>
 
-<th>Issue Date</th>
+                Search
 
-<th>Return Date</th>
+            </button>
 
-<th>Status</th>
+            {% if search %}
 
-<th>Fine</th>
+            <a href="{{ url_for('view_issued_books') }}" class="btn btn-secondary">
 
-</tr>
+                Clear
 
-</thead>
+            </a>
 
-<tbody>
+            {% endif %}
 
-{% for i in issued %}
+        </form>
 
-<tr>
+        <div class="export-dropdown">
 
-<td>{{ i.id }}</td>
+            <button type="button" class="btn btn-primary export-btn">
 
-<td>{{ i.student_name }}</td>
+                <i class="fa-solid fa-download"></i>
 
-<td>{{ i.book_name }}</td>
+                Export
 
-<td>{{ i.issue_date }}</td>
+                <i class="fa-solid fa-chevron-down"></i>
 
-<td>{{ i.return_date }}</td>
+            </button>
 
-<td>
+            <div class="export-menu">
 
-{% if i.status=="Issued" %}
+                <a href="{{ url_for('export_issued_pdf', search=search) }}">
 
-<span class="badge badge-issued">
+                    <i class="fa-solid fa-file-pdf"></i>
 
-Issued
+                    PDF
 
-</span>
+                </a>
 
-{% else %}
+                <a href="{{ url_for('export_issued_excel', search=search) }}">
 
-<span class="badge badge-returned">
+                    <i class="fa-solid fa-file-excel"></i>
 
-Returned
+                    Excel
 
-</span>
+                </a>
 
-{% endif %}
+                <a href="{{ url_for('export_issued_csv', search=search) }}">
 
-</td>
+                    <i class="fa-solid fa-file-csv"></i>
 
-<td>
+                    CSV
 
-₹{{ i.fine_amount }}
+                </a>
 
-</td>
+                <a href="#" onclick="window.print(); return false;">
 
-</tr>
+                    <i class="fa-solid fa-print"></i>
 
-{% else %}
+                    Print
 
-<tr>
+                </a>
 
-<td colspan="7" class="empty-table">
+            </div>
 
-No issued books found.
+        </div>
 
-</td>
+    </div>
 
-</tr>
+    <!-- Table -->
 
-{% endfor %}
+    <table class="table">
 
-</tbody>
+        <thead>
 
-</table>
+            <tr>
+
+                <th>Sr. No.</th>
+
+                <th>Student</th>
+
+                <th>Book</th>
+
+                <th>Issue Date</th>
+
+                <th>Return Date</th>
+
+                <th>Status</th>
+
+                <th>Fine</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for i in issued %}
+
+            <tr>
+
+                <td>{{ i.id }}</td>
+
+                <td>{{ i.student_name }}</td>
+
+                <td>{{ i.book_name }}</td>
+
+                <td>{{ i.issue_date }}</td>
+
+                <td>{{ i.return_date }}</td>
+
+                <td>
+
+                    {% if i.status == "Issued" %}
+
+                    <span class="badge badge-issued">
+
+                        <i class="fa-solid fa-book-open"></i>
+
+                        Issued
+
+                    </span>
+
+                    {% else %}
+
+                    <span class="badge badge-returned">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                        Returned
+
+                    </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+
+                    {% if i.fine_amount > 0 %}
+
+                    <span style="color:#dc3545;font-weight:700;">
+
+                        ₹{{ i.fine_amount }}
+
+                    </span>
+
+                    {% else %}
+
+                    <span style="color:#28a745;font-weight:600;">
+
+                        No Fine
+
+                    </span>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+
+                <td colspan="7" class="empty-table">
+
+                    <i class="fa-regular fa-folder-open" style="font-size:40px;color:#bbb;"></i>
+
+                    <div style="margin-top:10px;font-weight:600;">
+
+                        No issued books found.
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <!-- Pagination -->
+
+    <div class="pagination-container">
+
+        <div class="pagination-info">
+
+            Showing
+
+            {{ ((page-1) * per_page) + 1 }}
+
+            to
+
+            {{ [page * per_page, total_records] | min }}
+
+            of
+
+            {{ total_records }}
+
+            records
+
+        </div>
+
+        <div class="pagination">
+
+            {% if page > 1 %}
+
+            <a class="btn btn-secondary" href="{{ url_for('view_issued_books',
+                    page=page-1,
+                    search=search) }}">
+
+                ← Previous
+
+            </a>
+
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+
+            <a href="{{ url_for('view_issued_books',
+                    page=p,
+                    search=search) }}" class="page-number {% if p == page %}active{% endif %}">
+
+                {{ p }}
+
+            </a>
+
+            {% endfor %}
+
+            {% if page < total_pages %} <a class="btn btn-secondary" href="{{ url_for('view_issued_books',
+                    page=page+1,
+                    search=search) }}">
+
+                Next →
+
+                </a>
+
+                {% endif %}
+
+        </div>
+
+    </div>
 
 </div>
+
+<script>
+    const searchBox = document.querySelector('input[name="search"]');
+
+    let timer;
+
+    searchBox.addEventListener("keyup", function () {
+
+        clearTimeout(timer);
+
+        timer = setTimeout(function () {
+
+            if (searchBox.value.trim() === "") {
+
+                window.location = "/admin/view-issued";
+
+                return;
+
+            }
+
+            searchBox.form.submit();
+
+        }, 800);
+
+    });
+</script>
 
 {% endblock %}

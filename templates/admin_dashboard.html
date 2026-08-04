@@ -180,6 +180,16 @@ Admin Dashboard
 
     </a>
 
+    <a href="{{ url_for('admin_profile') }}" class="dashboard-card">
+        <span>
+            <i class="fa-solid fa-user"></i>
+        </span>
+        <h3>
+            My Profile
+        </h3>
+        <p>Manage your account</p>
+    </a>
+
     <a href="{{ url_for('logout') }}" class="dashboard-card">
 
         <span>
@@ -196,39 +206,39 @@ Admin Dashboard
 
 <div class="card activity-card">
 
-<h2 class="page-title">
+    <h2 class="page-title">
 
-Recent Activity
+        Recent Activity
 
-</h2>
+    </h2>
 
-{% if activities %}
+    {% if activities %}
 
-{% for activity in activities %}
+    {% for activity in activities %}
 
-<div class="activity">
+    <div class="activity">
 
-<div class="activity-title">
+        <div class="activity-title">
 
-{{ activity.activity }}
+            {{ activity.activity }}
 
-</div>
+        </div>
 
-<div class="activity-time">
+        <div class="activity-time">
 
-{{ activity.created_at }}
+            {{ activity.created_at }}
 
-</div>
+        </div>
 
-</div>
+    </div>
 
-{% endfor %}
+    {% endfor %}
 
-{% else %}
+    {% else %}
 
-<p>No activity yet.</p>
+    <p>No activity yet.</p>
 
-{% endif %}
+    {% endif %}
 
 </div>
 

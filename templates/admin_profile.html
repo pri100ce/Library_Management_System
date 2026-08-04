@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}
+Admin Profile
+{% endblock %}
+
+{% block content %}
+
+<div class="profile-container">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary back-btn">
+
+        ← Back to Dashboard
+
+    </a>
+
+    <div class="card profile-card">
+
+        <h1 class="page-title">
+
+            My Profile
+
+        </h1>
+
+        <p class="subtitle">
+
+            Manage your account settings.
+
+        </p>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <div class="profile-picture-section">
+
+                {% if admin.profile_image %}
+
+                <img src="{{ url_for('static', filename='uploads/profiles/' ~ admin.profile_image) }}"
+                    class="profile-picture">
+
+                {% else %}
+
+                <img src="{{ url_for('static', filename='images/default-profile.png') }}" class="profile-picture">
+
+                {% endif %}
+
+                <input type="file" name="profile_image" accept="image/*">
+
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-g">
+
+                    <label>Name</label>
+
+                    <input type="text" name="name" value="{{ admin.name }}" required>
+
+                </div>
+
+                <div class="form-g">
+
+                    <label>Username</label>
+
+                    <input type="text" name="username" value="{{ admin.username }}" required>
+
+                </div>
+
+                <div class="form-g">
+
+                    <label>Email</label>
+
+                    <input type="email" name="email" value="{{ admin.email }}" required>
+
+                </div>
+
+            </div>
+
+            <hr class="divider">
+
+            <h3 class="section-title">
+
+                Change Password
+
+            </h3>
+
+            <div class="form-grid">
+
+                <div class="form-g">
+
+                    <label>Current Password</label>
+
+                    <div class="password-field">
+
+                        <input type="password" name="current_password" id="current_password">
+
+                    </div>
+
+                </div>
+
+                <div class="form-g">
+
+                    <label>New Password</label>
+
+                    <div class="password-field">
+
+                        <input type="password" name="new_password" id="new_password">
+
+                    </div>
+
+                </div>
+
+                <div class="form-g">
+
+                    <label>Confirm Password</label>
+
+                    <div class="password-field">
+
+                        <input type="password" name="confirm_password" id="confirm_password">
+
+                    </div>
+
+                </div>
+
+                <div class="form-g">
+                    <div class="password-actions">
+                        <div class="password-toggleD">
+
+                            <i class="fa-solid fa-eye" id="passwordToggleIcon"></i>
+
+                            <span id="passwordToggleText">Show Passwords</span>
+
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-sm" id="clearPasswords">
+
+                            Cancel
+
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div style="margin-top:30px;">
+
+                <button class="btn btn-primary">
+
+                    <i class="fa-solid fa-floppy-disk"></i>
+
+                    Save Changes
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+
+    const passwordToggle = document.querySelector(".password-toggleD");
+
+    const passwordToggleIcon = document.getElementById("passwordToggleIcon");
+
+    const passwordToggleText = document.getElementById("passwordToggleText");
+
+    passwordToggle.addEventListener("click", function () {
+
+        const fields = document.querySelectorAll(
+
+            "#current_password, #new_password, #confirm_password"
+
+        );
+
+        let show = fields[0].type === "password";
+
+        fields.forEach(function (field) {
+
+            field.type = show ? "text" : "password";
+
+        });
+
+        if (show) {
+
+            passwordToggleIcon.classList.remove("fa-eye");
+
+            passwordToggleIcon.classList.add("fa-eye-slash");
+
+            passwordToggleText.textContent = "Hide Passwords";
+
+        }
+
+        else {
+
+            passwordToggleIcon.classList.remove("fa-eye-slash");
+
+            passwordToggleIcon.classList.add("fa-eye");
+
+            passwordToggleText.textContent = "Show Passwords";
+
+        }
+
+    });
+
+    const clearPasswords = document.getElementById("clearPasswords");
+
+    if (clearPasswords) {
+
+        clearPasswords.addEventListener("click", function () {
+
+            document.getElementById("current_password").value = "";
+
+            document.getElementById("new_password").value = "";
+
+            document.getElementById("confirm_password").value = "";
+
+            document.getElementById("current_password").type = "password";
+
+            document.getElementById("new_password").type = "password";
+
+            document.getElementById("confirm_password").type = "password";
+
+            passwordToggleIcon.classList.remove("fa-eye-slash");
+
+            passwordToggleIcon.classList.add("fa-eye");
+
+            passwordToggleText.textContent = "Show Passwords";
+
+        });
+
+    }
+
+</script>
+
+{% endblock %}
