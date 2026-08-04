@@ -129,7 +129,7 @@ def login():
 
                 session["user_id"] = admin["id"]
                 session["role"] = "admin"
-                session["name"] = admin["username"]
+                session["name"] = admin["name"]
                 session["theme"] = admin["theme"]
 
                 return redirect(url_for("admin_dashboard"))
