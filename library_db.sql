@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 03, 2026 at 04:42 AM
+-- Generation Time: Aug 04, 2026 at 04:35 AM
 -- Server version: 8.0.45
 -- PHP Version: 8.2.12
 
@@ -73,17 +73,20 @@ INSERT INTO `activity_logs` (`id`, `activity`, `created_at`) VALUES
 
 CREATE TABLE `admins` (
   `id` int NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
   `username` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
-  `theme` varchar(10) NOT NULL DEFAULT 'light'
+  `theme` varchar(10) NOT NULL DEFAULT 'light',
+  `profile_image` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `admins`
 --
 
-INSERT INTO `admins` (`id`, `username`, `password`, `theme`) VALUES
-(1, 'admin', 'admin@2105', 'light');
+INSERT INTO `admins` (`id`, `name`, `username`, `email`, `password`, `theme`, `profile_image`) VALUES
+(1, 'Prince', 'admin', 'admin@gmail.com', 'ima@2105', 'light', 'admin.jpg');
 
 -- --------------------------------------------------------
 
@@ -161,19 +164,21 @@ CREATE TABLE `students` (
   `name` varchar(255) NOT NULL,
   `class` varchar(50) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) NOT NULL DEFAULT 'student123',
-  `theme` varchar(10) NOT NULL DEFAULT 'light'
+  `theme` varchar(10) NOT NULL DEFAULT 'light',
+  `profile_image` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`id`, `name`, `class`, `phone`, `password`, `theme`) VALUES
-(1, 'Surela Prince', '12', '1457856895', 'ima@2105', 'light'),
-(2, 'Mehul Sakariya', '12', '2356898589', 'student123', 'light'),
-(3, 'Haresh Patadiya', '12', '5485956565', 'student123', 'light'),
-(4, 'Hitesh Bhatiya', '12', '1235464789', 'student123', 'light');
+INSERT INTO `students` (`id`, `name`, `class`, `phone`, `email`, `password`, `theme`, `profile_image`) VALUES
+(1, 'Surela Prince', '12', '1457856895', 'prince@gmail.com', 'ima@2105', 'light', '1.png'),
+(2, 'Mehul Sakariya', '12', '2356898589', NULL, 'student123', 'light', NULL),
+(3, 'Haresh Patadiya', '12', '5485956565', NULL, 'student123', 'light', NULL),
+(4, 'Hitesh Bhatiya', '12', '1235464789', NULL, 'student123', 'light', NULL);
 
 --
 -- Indexes for dumped tables
