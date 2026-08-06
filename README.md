@@ -171,7 +171,7 @@ Password   : student123
 
 ## Author
 
-**Prince Thakor**
+**Surela Prince**
 
 Bachelor of Computer Applications (BCA)
 
