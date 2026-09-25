@@ -32,7 +32,7 @@ CREATE TABLE `activity_logs` (
   `id` int NOT NULL,
   `activity` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+);
 
 --
 -- Dumping data for table `activity_logs`
@@ -80,7 +80,7 @@ CREATE TABLE `admins` (
   `password` varchar(255) NOT NULL,
   `theme` varchar(10) NOT NULL DEFAULT 'light',
   `profile_image` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+);
 
 --
 -- Dumping data for table `admins`
@@ -102,7 +102,7 @@ CREATE TABLE `books` (
   `category` varchar(100) DEFAULT NULL,
   `quantity` int DEFAULT '1',
   `cover_image` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+);
 
 --
 -- Dumping data for table `books`
@@ -136,7 +136,7 @@ CREATE TABLE `issued_books` (
   `status` varchar(50) DEFAULT 'Issued',
   `fine_amount` decimal(10,2) DEFAULT '0.00',
   `fine_status` enum('Pending','Paid') DEFAULT 'Paid'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+);
 
 --
 -- Dumping data for table `issued_books`
@@ -169,7 +169,7 @@ CREATE TABLE `students` (
   `password` varchar(255) NOT NULL DEFAULT 'student123',
   `theme` varchar(10) NOT NULL DEFAULT 'light',
   `profile_image` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+);
 
 --
 -- Dumping data for table `students`
