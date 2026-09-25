@@ -5,109 +5,105 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
         {% block title %}Library Management System{% endblock %}
     </title>
 
-    <link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 </head>
 
-<body{% if session.get('theme') == 'dark' %} class="dark"{% endif %}>
+<body{% if session.get('theme')=='dark' %} class="dark" {% endif %}>
 
-{% if session.get('role') %}
+    {% if session.get('role') %}
 
-<nav class="navbar">
+    <nav class="navbar">
 
-    <div class="logo">
+        <div class="logo">
 
-        <!-- Logo will go here later -->
-        <i class="fa-solid fa-book-open-reader logo-icon"></i>
+            <!-- Logo -->
+            <img src="{{ url_for('static', filename='uploads/logo/library_logo.png') }}" alt="Library Management System"
+                class="logo-image">
+            <div>
 
-        <div>
+                <h2>Library Management System</h2>
 
-            <h2>Library Management</h2>
+                <small style="color:#d9d9d9;">
+                    Digital Library System
+                </small>
 
-            <small style="color:#d9d9d9;">
-                Digital Library System
-            </small>
+            </div>
 
         </div>
 
-    </div>
+        <div class="user-area">
 
-    <div class="user-area">
-
-        {% if session.get('role') == 'admin' %}
+            {% if session.get('role') == 'admin' %}
 
             <span>
                 <i class="fa-solid fa-user"></i> Admin :
                 <strong>{{ session['name'] }}</strong>
             </span>
 
-        {% elif session.get('role') == 'student' %}
+            {% elif session.get('role') == 'student' %}
 
             <span>
                 <i class="fa-solid fa-graduation-cap"></i> Student :
                 <strong>{{ session['name'] }}</strong>
             </span>
 
+            {% endif %}
+
+            <button id="themeToggle" class="theme-toggle" type="button" title="Toggle Theme">
+
+                <i class="fa-solid fa-moon"></i>
+
+            </button>
+
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+
+                Logout
+
+            </a>
+
+        </div>
+
+    </nav>
+
+    {% endif %}
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+
+        {% if messages %}
+
+        {% for message in messages %}
+
+        <div class="alert alert-success">
+
+            {{ message }}
+
+        </div>
+
+        {% endfor %}
+
         {% endif %}
 
-        <button id="themeToggle" class="theme-toggle" type="button" title="Toggle Theme">
-        
-            <i class="fa-solid fa-moon"></i>
-        
-        </button>
+        {% endwith %}
 
-        <a href="{{ url_for('logout') }}"
-           class="logout-btn">
+        {% block content %}
 
-            Logout
-
-        </a>
+        {% endblock %}
 
     </div>
 
-</nav>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 
-{% endif %}
-
-<div class="container">
-
-{% with messages = get_flashed_messages() %}
-
-{% if messages %}
-
-{% for message in messages %}
-
-<div class="alert alert-success">
-
-{{ message }}
-
-</div>
-
-{% endfor %}
-
-{% endif %}
-
-{% endwith %}
-
-{% block content %}
-
-{% endblock %}
-
-</div>
-
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
-</body>
+    </body>
 
 </html>

@@ -79,10 +79,6 @@ body {
 
 }
 
-/* ===========================
-        NAVBAR
-=========================== */
-
 /* =====================================================
    NAVBAR
 ===================================================== */
@@ -126,10 +122,12 @@ body {
 
 }
 
-.logo img {
-
-    width: 45px;
-
+.logo-image {
+    height: 58px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+    display: block;
 }
 
 .logo h2 {
@@ -223,19 +221,11 @@ body {
 
 .page-title {
 
-    font-size: 30px;
+    font-size: 25px;
 
     margin-bottom: 10px;
 
     color: var(--primary);
-
-}
-
-.subtitle {
-
-    color: var(--text-light);
-
-    margin-bottom: 25px;
 
 }
 
@@ -582,6 +572,11 @@ select:focus {
 =========================== */
 
 @media (max-width:768px) {
+
+    .logo-image {
+        height: 50px;
+        max-width: 180px;
+    }
 
     .navbar {
 
@@ -1355,20 +1350,6 @@ body.dark {
 
 }
 
-/* html.dark{
-
-    --bg:#121212;
-
-    --card:#1f1f1f;
-
-    --text:#f5f5f5;
-
-    --primary:#1f4f87;
-
-    --border:#3b3b3b;
-
-} */
-
 /* Theme button */
 
 .theme-toggle {
@@ -1407,6 +1388,16 @@ body.dark {
 
     color: white;
 
+}
+
+.logo-image-login{
+    height: 100px;
+
+    width: auto;
+
+    max-width: 220px;
+
+    object-fit: contain;
 }
 
 .book-cover {
